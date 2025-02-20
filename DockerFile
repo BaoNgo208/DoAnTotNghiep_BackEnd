@@ -1,0 +1,17 @@
+# Sử dụng hình ảnh JDK có sẵn
+FROM openjdk:17-jdk-slim
+
+# Cài đặt FFmpeg
+RUN apt-get update && apt-get install -y ffmpeg && ffmpeg -version
+
+# Thiết lập thư mục làm việc
+WORKDIR /app
+
+# Sao chép file JAR vào container
+COPY target/myapp.jar app.jar
+
+# Mở cổng 8080
+EXPOSE 8080
+
+# Chạy ứng dụng Spring Boot
+ENTRYPOINT ["java", "-jar", "app.jar"]
