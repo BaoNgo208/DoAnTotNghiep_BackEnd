@@ -4,6 +4,7 @@ import com.example.spring_boot_react_demo.model.entity.Video;
 import com.example.spring_boot_react_demo.repository.VideoRepo;
 import com.example.spring_boot_react_demo.service.CloudinaryService;
 import com.example.spring_boot_react_demo.service.FFmpegService;
+import com.example.spring_boot_react_demo.util.ConvertUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.stereotype.Service;
@@ -200,6 +201,81 @@ public class FFmpegServiceImpl implements FFmpegService {
         } catch (IOException | InterruptedException e) {
             e.printStackTrace();
             return "Error while converting video: " + e.getMessage();
+        }
+    }
+
+    @Override
+    public String mixAudioVideo(String videoFile, String audioFile, String outputFile) {
+        try {
+            ProcessBuilder processBuilder = new ProcessBuilder(
+                    "ffmpeg",
+                    "-i", "\"" + videoFile + "\"",
+                    "-i", "\"" + audioFile + "\"",
+                    "-c:v", "copy",
+                    "-c:a", "aac",
+                    "-map", "0:v:0",
+                    "-map", "1:a:0",
+                    outputFile
+            );
+            processBuilder.redirectErrorStream(true);
+            Process process = processBuilder.start();
+            StringBuilder processOutput = new StringBuilder();
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    System.out.println(line);
+                    processOutput.append(line).append("\n");
+                }
+            }
+            return "Merge successful, output file: " + outputFile;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return "Merge failed: " + e.getMessage();
+        }
+    }
+
+    @Override
+    public String addSrtToVideo(MultipartFile videoFile, MultipartFile srtFile) {
+        try {
+            File tempVideoFile = File.createTempFile("temp_video_", ".mp4");
+            File tempSubtitleFile = File.createTempFile("temp_subtitle_", ".srt");
+            videoFile.transferTo(tempVideoFile);
+            srtFile.transferTo(tempSubtitleFile);
+            File outputFile = File.createTempFile("output_burned_", ".mp4");
+            String subtitlePath = tempSubtitleFile.getAbsolutePath();
+
+            // Escape the subtitle file path:
+            // - Replace "\" with "\\" to handle backslashes in Windows paths.
+            // - Replace ":" with "\:" to prevent issues in certain systems.
+            String escapedSubtitlePath = subtitlePath.replace("\\", "\\\\").replace(":", "\\:");
+
+            ProcessBuilder processBuilder = new ProcessBuilder(
+                    "ffmpeg", "-y",
+                    "-i", tempVideoFile.getAbsolutePath(),
+                    "-vf", "subtitles='" + escapedSubtitlePath + "'",
+                    "-c:v", "libx264", "-crf", "23", "-preset", "fast",
+                    "-c:a", "copy", outputFile.getAbsolutePath()
+            );
+
+            processBuilder.redirectErrorStream(true);
+            Process process = processBuilder.start();
+            BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+            StringBuilder output = new StringBuilder();
+            String line;
+            while ((line = reader.readLine()) != null) {
+                System.out.println(line);
+                output.append(line).append("\n");
+            }
+            MultipartFile mergedFile = ConvertUtils.convertFileToMultipartFile(outputFile);
+            String cloudinaryUrl = cloudinaryService.uploadFile(mergedFile, "folder_1","video");
+            tempVideoFile.delete();
+            tempSubtitleFile.delete();
+            outputFile.delete();
+            return cloudinaryUrl != null ? cloudinaryUrl : "Error uploading merged file to Cloudinary.";
+
+        } catch (IOException e) {
+            e.printStackTrace();
+            return " Error during processing: " + e.getMessage();
         }
     }
 
