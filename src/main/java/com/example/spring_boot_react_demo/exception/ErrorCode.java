@@ -11,7 +11,10 @@ public enum ErrorCode {
     INVALID_AUDIO_FORMAT("Invalid audio format", HttpStatus.BAD_REQUEST),
     INVALID_BACKGROUND_FORMAT("Invalid background format", HttpStatus.BAD_REQUEST),
     PROJECT_NOT_FOUND("Project not found", HttpStatus.NOT_FOUND),
-    BACKGROUND_NOT_FOUND("background not found", HttpStatus.NOT_FOUND)
+    BACKGROUND_NOT_FOUND("background not found", HttpStatus.NOT_FOUND),
+    VIDEO_NOT_FOUND("video not found", HttpStatus.NOT_FOUND),
+    FFMPEG_CREATE_VIDEO_FAIL("FFmpeg processing failed  for create video", HttpStatus.BAD_REQUEST),
+    FFMPEG_OVERLAY_VIDEO_FAIL("FFmpeg processing failed  for overlay video", HttpStatus.BAD_REQUEST)
     ;
 
     private final String message;

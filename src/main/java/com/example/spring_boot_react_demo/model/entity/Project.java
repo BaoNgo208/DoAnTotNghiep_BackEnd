@@ -1,9 +1,9 @@
 package com.example.spring_boot_react_demo.model.entity;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
-
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -31,6 +31,13 @@ public class Project {
     @Column(name ="project_length")
     Double length ;
 
+    @Column(name = "project_asset")
+    String asset;
+
     @OneToMany(mappedBy = "project")
-    List<Background> backgrounds = new ArrayList<>();
+    List<Video> Video = new ArrayList<>();
+
+    @OneToOne(mappedBy = "project", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonManagedReference
+    private Background background;
 }

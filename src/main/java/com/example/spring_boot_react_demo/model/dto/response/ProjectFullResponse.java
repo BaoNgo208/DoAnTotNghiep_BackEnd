@@ -1,5 +1,6 @@
 package com.example.spring_boot_react_demo.model.dto.response;
 
+import com.example.spring_boot_react_demo.model.entity.Background;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 import java.time.LocalDateTime;
@@ -10,10 +11,12 @@ import java.util.List;
 @AllArgsConstructor
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class ProjectResponse {
+public class ProjectFullResponse {
     Long id;
     String name ;
     LocalDateTime uploadTime ;
     Double length ;
-    List<BackgroundResponse> backgrounds;
+    String asset;
+    List<VideoResponse> videos;
+    Background background;
 }

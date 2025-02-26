@@ -3,14 +3,15 @@ package com.example.spring_boot_react_demo.controller;
 import com.example.spring_boot_react_demo.model.dto.request.CreateProjectRequest;
 import com.example.spring_boot_react_demo.model.dto.request.UpdateProjectRequest;
 import com.example.spring_boot_react_demo.model.dto.response.ApiResponse;
-import com.example.spring_boot_react_demo.model.dto.response.CreateProjectResponse;
-import com.example.spring_boot_react_demo.model.dto.response.ProjectResponse;
+import com.example.spring_boot_react_demo.model.dto.response.ProjectBasicResponse;
+import com.example.spring_boot_react_demo.model.dto.response.ProjectFullResponse;
 import com.example.spring_boot_react_demo.service.ProjectService;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequiredArgsConstructor
@@ -21,23 +22,30 @@ public class ProjectController {
     ProjectService projectService;
 
     @PostMapping("/createProject")
-    public ApiResponse<CreateProjectResponse> createProject(@RequestBody CreateProjectRequest createProjectRequest) {
-        return ApiResponse.<CreateProjectResponse>builder()
+    public ApiResponse<ProjectBasicResponse> createProject(@RequestBody CreateProjectRequest createProjectRequest) {
+        return ApiResponse.<ProjectBasicResponse>builder()
                 .result(projectService.createProject(createProjectRequest))
                 .build();
     }
 
     @GetMapping
-    public ApiResponse<ProjectResponse> getProjectById(@RequestParam Long id) {
-        return ApiResponse.<ProjectResponse>builder()
+    public ApiResponse<ProjectFullResponse> getProjectById(@RequestParam Long id) {
+        return ApiResponse.<ProjectFullResponse>builder()
                 .result(projectService.getProject(id))
                 .build();
     }
 
-    @PostMapping("/updateProject")
+    @PatchMapping("/updateProject")
     public ApiResponse<String> UpdateProject(@RequestBody UpdateProjectRequest updateProjectRequest) {
         return ApiResponse.<String>builder()
                 .result(projectService.updateProject(updateProjectRequest))
+                .build();
+    }
+    @PutMapping("/addBackground")
+    public ApiResponse<String> addBackground(@RequestParam Long projectId,
+                                             @RequestParam MultipartFile backgroundFile) {
+        return ApiResponse.<String>builder()
+                .result(projectService.addBackground(projectId, backgroundFile))
                 .build();
     }
 }

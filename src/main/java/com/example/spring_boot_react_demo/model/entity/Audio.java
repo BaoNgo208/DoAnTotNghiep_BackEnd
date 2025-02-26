@@ -22,9 +22,6 @@ public class Audio {
     @Column(name = "audio_asset", nullable = false)
     String asset;
 
-    @Column(name = "audio_type")
-    String type;
-
     @Column(name = "audio_upload_time")
     LocalDateTime uploadTime = LocalDateTime.now();
 

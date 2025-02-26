@@ -32,11 +32,11 @@ public class FileUtil {
 
     public static String getFileType(MultipartFile file) {
         if (isImage(file)) {
-            return MediaType.IMAGE.name();
+            return MediaType.IMAGE.getname();
         } else if (isVideo(file)) {
-            return MediaType.VIDEO.name();
+            return MediaType.VIDEO.getname();
         } else if (isAudio(file)) {
-            return MediaType.AUDIO.name();
+            return MediaType.AUDIO.getname();
         } else {
             return "unknown";
         }

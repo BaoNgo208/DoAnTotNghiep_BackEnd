@@ -11,14 +11,12 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class BackgroundRequest {
+public class VideoRequest {
     Long id;
     MultipartFile file;
     Long projectId;
     String asset;
-    String type;
     LocalDateTime uploadTime;
-    Integer displayOrder;
     Double startTime;
     Double endTime;
 }

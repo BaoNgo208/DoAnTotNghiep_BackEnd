@@ -17,19 +17,19 @@ public class CloudinaryServiceImpl implements CloudinaryService {
     private Cloudinary cloudinary;
 
     @Override
-    public String uploadFile(MultipartFile file, String folderName, String resourceType) {
+    public String uploadFile(MultipartFile file, String resourceType) {
         try {
             HashMap<Object, Object> options = new HashMap<>();
-            options.put("folder", folderName);
+            options.put("folder", "folder_1");
             options.put("resource_type", resourceType);
             Map uploadedFile = cloudinary.uploader().upload(file.getBytes(), options);
             String publicId = (String) uploadedFile.get("public_id");
-            if (MediaType.VIDEO.name().toLowerCase().equals(resourceType)) {
-                return CLOUDINARY_UPLOAD_URL + MediaType.VIDEO.name().toLowerCase() + LOCAL_UPLOAD_URL + publicId + ".mp4";
-            } else if (MediaType.AUDIO.name().equals(resourceType)) {
-                return CLOUDINARY_UPLOAD_URL + MediaType.AUDIO.name().toLowerCase() + LOCAL_UPLOAD_URL + publicId + ".mp3";
-            } else if (MediaType.IMAGE.name().equals(resourceType)) {
-                return CLOUDINARY_UPLOAD_URL + MediaType.IMAGE.name().toLowerCase() + LOCAL_UPLOAD_URL + publicId + ".jpg";
+            if (MediaType.VIDEO.getname().toLowerCase().equals(resourceType)) {
+                return CLOUDINARY_UPLOAD_URL + MediaType.VIDEO.getname().toLowerCase() + LOCAL_UPLOAD_URL + publicId + ".mp4";
+            } else if (MediaType.AUDIO.getname().equals(resourceType)) {
+                return CLOUDINARY_UPLOAD_URL + MediaType.AUDIO.getname().toLowerCase() + LOCAL_UPLOAD_URL + publicId + ".mp3";
+            } else if (MediaType.IMAGE.getname().equals(resourceType)) {
+                return CLOUDINARY_UPLOAD_URL + MediaType.IMAGE.getname().toLowerCase() + LOCAL_UPLOAD_URL + publicId + ".jpg";
             }
             return cloudinary.url().secure(true).generate(publicId);
         } catch (IOException e) {
@@ -42,46 +42,25 @@ public class CloudinaryServiceImpl implements CloudinaryService {
         try {
             Map<String, Object> options = new HashMap<>();
             options.put("resource_type", resourceType);
-            Map result = cloudinary.uploader().destroy(extractPublicId(fileUrl, resourceType), options);
-            String status = (String) result.get("result");
+            String publicId = extractPublicId(fileUrl);
+            Map result = cloudinary.uploader().destroy(publicId, options);
+            String status = (String) result.get(RESULT);
 
-            return "ok".equals(status);
+            return OK.equals(status);
         } catch (IOException e) {
             e.printStackTrace();
             return false;
         }
     }
 
-    public String extractPublicId(String fileUrl, String resourceType) {
-        String prefix = CLOUDINARY_UPLOAD_URL + resourceType + LOCAL_UPLOAD_URL;
+    public String extractPublicId(String fileUrl) {
+        String[] parts = fileUrl.split("/");
+        String fileName = parts[parts.length - 1];
 
-        if (fileUrl.startsWith(prefix)) {
-            String fileName = fileUrl.substring(prefix.length());
-            int lastDotIndex = fileName.lastIndexOf(DOT);
-            int noDot = NOT_FOUND;
-            if (lastDotIndex != noDot) {
-                return fileName.substring(ZERO, lastDotIndex);
-            }
+        int lastDotIndex = fileName.lastIndexOf(DOT);
+        if (lastDotIndex != NOT_FOUND) {
+            return fileName.substring(ZERO, lastDotIndex);
         }
-        return null;
-    }
-    @Override
-    public String export(MultipartFile file, String folderName, String resourceType) {
-        try {
-            HashMap<Object, Object> options = new HashMap<>();
-            options.put("folder", folderName);
-            options.put("resource_type", resourceType);
-            String originalFilename = file.getOriginalFilename();
-            String extension = "";
-            if (originalFilename != null && originalFilename.contains(".")) {
-                extension = originalFilename.substring(originalFilename.lastIndexOf("."));
-            }
-            Map uploadedFile = cloudinary.uploader().upload(file.getBytes(), options);
-            String publicId = (String) uploadedFile.get("public_id");
-            return CLOUDINARY_UPLOAD_URL + MediaType.VIDEO.name() + LOCAL_UPLOAD_URL + publicId + extension;
-        } catch (IOException e) {
-            e.printStackTrace();
-            return null;
-        }
+        return fileName;
     }
 }

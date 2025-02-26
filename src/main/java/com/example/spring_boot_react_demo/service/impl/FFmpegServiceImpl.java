@@ -1,9 +1,6 @@
 package com.example.spring_boot_react_demo.service.impl;
 
 import com.example.spring_boot_react_demo.model.MediaType;
-import com.example.spring_boot_react_demo.model.entity.Video;
-import com.example.spring_boot_react_demo.repository.BackgroundRepo;
-import com.example.spring_boot_react_demo.repository.VideoRepo;
 import com.example.spring_boot_react_demo.service.CloudinaryService;
 import com.example.spring_boot_react_demo.service.FFmpegService;
 import com.example.spring_boot_react_demo.util.Constants;
@@ -15,8 +12,7 @@ import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import java.io.*;
-import java.nio.file.Files;
-import java.nio.file.Paths;
+import java.nio.file.*;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -24,9 +20,7 @@ import java.util.List;
 @RequiredArgsConstructor
 @FieldDefaults(level =  AccessLevel.PRIVATE, makeFinal = true)
 public class FFmpegServiceImpl implements FFmpegService {
-    private final CloudinaryService cloudinaryService;
-    private final VideoRepo videoRepo;
-    private final BackgroundRepo backgroundRepo;
+    CloudinaryService cloudinaryService;
 
     @Override
     public String extractAudio(String videoPath) {
@@ -160,16 +154,12 @@ public class FFmpegServiceImpl implements FFmpegService {
                     Files.readAllBytes(outputFile.toPath())
             );
 
-            String cloudinaryUrl = cloudinaryService.uploadFile(multipartOutputFile, resourceType);
+            String cloudinaryUrl = cloudinaryService.uploadFile(multipartOutputFile,"folder_1", resourceType);
             listFile.delete();
             for (File tempFile : tempFiles) {
                 tempFile.delete();
             }
             outputFile.delete();
-
-            Video newVideo = new Video();
-            newVideo.setUrl(cloudinaryUrl);
-            videoRepo.save(newVideo);
 
             return cloudinaryUrl != null ? cloudinaryUrl : "Error uploading merged file to Cloudinary.";
         } catch (IOException | InterruptedException e) {
@@ -191,15 +181,12 @@ public class FFmpegServiceImpl implements FFmpegService {
                     outputFile.getName(), outputFile.getName(), "video/mp4",
                     Files.readAllBytes(outputFile.toPath())
             );
-            String cloudinaryUrl = cloudinaryService.export(multipartOutputFile,
-                    "converted_videos",
-                    "video");
+            String cloudinaryUrl = cloudinaryService.uploadFile(multipartOutputFile,
+                    "folder_1",
+                    MediaType.VIDEO.getname());
             deleteFileIfExists(outputFile);
 
             if (cloudinaryUrl != null && !cloudinaryUrl.isEmpty()) {
-                Video newVideo = new Video();
-                newVideo.setUrl(cloudinaryUrl);
-                videoRepo.save(newVideo);
                 return cloudinaryUrl;
             } else {
                 return "Error uploading to Cloudinary.";
@@ -273,7 +260,6 @@ public class FFmpegServiceImpl implements FFmpegService {
                 output.append(line).append("\n");
             }
             MultipartFile mergedFile = ConvertUtils.convertFileToMultipartFile(outputFile);
-            String cloudinaryUrl = cloudinaryService.uploadFile(mergedFile, MediaType.VIDEO.name());
             tempVideoFile.delete();
             tempSubtitleFile.delete();
             outputFile.delete();
