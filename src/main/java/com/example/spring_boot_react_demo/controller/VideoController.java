@@ -2,13 +2,10 @@ package com.example.spring_boot_react_demo.controller;
 
 import com.example.spring_boot_react_demo.model.dto.response.ApiResponse;
 import com.example.spring_boot_react_demo.model.dto.response.VideoResponse;
-import com.example.spring_boot_react_demo.service.FFmpegService;
 import com.example.spring_boot_react_demo.service.VideoService;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import java.util.List;
@@ -19,7 +16,6 @@ import java.util.List;
 @FieldDefaults(level =  AccessLevel.PRIVATE, makeFinal = true)
 public class VideoController {
     VideoService videoService;
-    FFmpegService fFmpegService;
 
     @PostMapping()
     public ApiResponse<List<VideoResponse>> addVideo(@RequestParam List<MultipartFile> files, @RequestParam Long projectId) {
@@ -33,15 +29,5 @@ public class VideoController {
         return ApiResponse.<String>builder()
                 .result(videoService.deleteVideo(videoId))
                 .build();
-    }
-
-    @PostMapping("/convert")
-    public ResponseEntity<String> convertVideo(@RequestParam("file") MultipartFile inputVideo, @RequestParam("outputFileExtension") String outputFormat) {
-        try {
-            String result = fFmpegService.convertVideo(inputVideo, outputFormat);
-            return new ResponseEntity<>(result, HttpStatus.OK);
-        } catch (Exception e) {
-            return new ResponseEntity<>("Error while converting video: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
-        }
     }
 }

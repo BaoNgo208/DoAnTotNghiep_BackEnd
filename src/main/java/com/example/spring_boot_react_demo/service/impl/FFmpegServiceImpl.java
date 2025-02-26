@@ -9,7 +9,8 @@ import com.example.spring_boot_react_demo.repository.ProjectRepo;
 import com.example.spring_boot_react_demo.service.CloudinaryService;
 import com.example.spring_boot_react_demo.service.FFmpegService;
 import static com.example.spring_boot_react_demo.util.Constants.*;
-import com.example.spring_boot_react_demo.util.ConvertUtils;
+import static com.example.spring_boot_react_demo.util.ConvertUtils.*;
+import static  com.example.spring_boot_react_demo.util.FileUtil.*;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -161,27 +162,6 @@ public class FFmpegServiceImpl implements FFmpegService {
             return "Error while merging media.";
         }
     }
-
-    @Override
-    public String convertVideo(MultipartFile inputVideo, String outputFileExtension) {
-        String outputVideoPath = "output" + outputFileExtension;
-        try {
-            File tempFile = File.createTempFile("inputVideo", ".tmp");
-            inputVideo.transferTo(tempFile);
-            String inputVideoPath = tempFile.getAbsolutePath();
-            List<String> command = Arrays.asList(
-                    "ffmpeg", "-i", inputVideoPath, outputVideoPath
-            );
-            runFFmpegCommand(command);
-        } catch (IOException e) {
-            e.printStackTrace();
-            return "Error while converting the video: " + e.getMessage();
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        }
-        return outputVideoPath;
-    }
-
     @Override
     public String mixAudioVideo(String videoFile, String audioFile, String outputFile) {
         try {
@@ -231,7 +211,7 @@ public class FFmpegServiceImpl implements FFmpegService {
                     "-c:a", "copy", outputFile.getAbsolutePath()
             );
             runFFmpegCommand(command);
-            MultipartFile mergedFile = ConvertUtils.convertFileToMultipartFile(outputFile);
+            MultipartFile mergedFile = convertFileToMultipartFile(outputFile);
             tempVideoFile.delete();
             tempSubtitleFile.delete();
             outputFile.delete();
@@ -243,20 +223,29 @@ public class FFmpegServiceImpl implements FFmpegService {
             return null;
         }
     }
-    
+
     @Override
     public String createFullVideo(Project project, String outputVideoPath) {
         String size = project.getSize() == null ? "1280x720" : project.getSize();
 
-        String blackVideo = createBlackBackgroundVideo(project.getLength(), size, outputVideoPath);
+        String blackVideo = createBlackBackgroundVideo(project.getLength(), size);
         String mergeVideo = processVideos(project, blackVideo, outputVideoPath);
         String newOutput = mergeVideo;
         if (project.getBackground() != null) {
-            newOutput =  "output" + outputVideoPath;
+            String tempOutput =  "output_with_bg_" + outputVideoPath;
             addBackground(project.getBackground().getAsset(),
                     mergeVideo,
                     size,
-                    newOutput);
+                    tempOutput);
+            newOutput = tempOutput;
+        }
+        if(project.getLyric() != null) {
+            String tempOutput =  "output_with_lyric_" + outputVideoPath;
+            File lyricFile = createSrcFile(project.getLyric().getText());
+            addSrtToVideo(newOutput,
+                    lyricFile,
+                    tempOutput);
+            newOutput = tempOutput;
         }
         File outputFile = new File(newOutput);
         if (outputFile.exists()) {
@@ -269,16 +258,38 @@ public class FFmpegServiceImpl implements FFmpegService {
         return project.getAsset();
     }
 
+    private void addSrtToVideo(String videoPath, File srtFile, String outputPath) {
+        try {
+            String escapedSubtitlePath = srtFile.getAbsolutePath().replace("\\", "\\\\").replace(":", "\\:");
+            log.info("escapedSubtitlePath"+ escapedSubtitlePath);
+            runFFmpegCommand(Arrays.asList(
+                    "ffmpeg", "-y",
+                    "-i", videoPath,
+                    "-vf", "subtitles='" + escapedSubtitlePath + "'",
+                    "-c:v", "libx264", "-crf", "23", "-preset", "fast",
+                    "-c:a", "copy", outputPath
+            ));
+            deleteFileIfExists(videoPath);
+            deleteFileIfExists(srtFile.getAbsolutePath());
+        } catch (IOException | InterruptedException e) {
+            throw new AppException(ErrorCode.FFMPEG_CREATE_VIDEO_FAIL);
+        }
+    }
+
     private String processVideos(Project project, String videoPath, String outputVideoPath) {
         int index = ONE;
         for (Video video : project.getVideo()) {
             String newOutput = "output_" + index++ + outputVideoPath;
-            videoPath = overlayVideo(videoPath, video.getAsset(), video.getStartTime(), newOutput);
+            videoPath = overlayVideo(videoPath,
+                    video.getAsset(),
+                    video.getStartTime(),
+                    video.getEndTime(),
+                    newOutput);
         }
         return videoPath;
     }
 
-    private String overlayVideo(String backgroundVideoPath, String overlayVideoPath, double startTime, String outputPath) {
+    private String overlayVideo(String backgroundVideoPath, String overlayVideoPath, double startTime, double endTime, String outputPath) {
         try {
             runFFmpegCommand(Arrays.asList(
                     "ffmpeg", "-y",
@@ -288,7 +299,7 @@ public class FFmpegServiceImpl implements FFmpegService {
                     "[1:v]setpts=PTS-STARTPTS+" + startTime + "/TB[v1]; " +
                             "[1:a]adelay=" + (int)(startTime * 1000) + "|" + (int)(startTime * 1000) + "[a1]; " +
                             "[0:a][a1]amix=inputs=2:duration=first[aout]; " +
-                            "[0:v][v1]overlay=W/2-w/2:H/2-h/2[v]",
+                            "[0:v][v1]overlay=W/2-w/2:H/2-h/2:enable='between(t," + startTime + "," + endTime + ")'[v]",
                     "-map", "[v]",
                     "-map", "[aout]",
                     "-c:v", "libx264",
@@ -302,9 +313,9 @@ public class FFmpegServiceImpl implements FFmpegService {
         }
     }
 
-    private String createBlackBackgroundVideo(Double duration, String size, String outputVideoPath) {
+    private String createBlackBackgroundVideo(Double duration, String size) {
         try {
-            String outputPath = "black_video" + outputVideoPath;
+            String outputPath = "black_video.mp4";
             runFFmpegCommand(Arrays.asList(
                     "ffmpeg", "-y",
                     "-f", "lavfi", "-t", String.valueOf(duration), "-i", "color=c=black:s=" + size,
@@ -318,7 +329,7 @@ public class FFmpegServiceImpl implements FFmpegService {
         }
     }
 
-    private String addBackground (String backgroundPath, String videoPath,String size, String outputPath) {
+    private void addBackground (String backgroundPath, String videoPath,String size, String outputPath) {
         try{
             runFFmpegCommand(Arrays.asList(
                     "ffmpeg", "-y",
@@ -331,10 +342,9 @@ public class FFmpegServiceImpl implements FFmpegService {
                     outputPath
             ));
         }catch (Exception e){
-            e.printStackTrace();
+            throw new AppException(ErrorCode.FFMPEG_CREATE_VIDEO_FAIL);
         }
         deleteFileIfExists(videoPath);
-        return outputPath;
     }
 
     private void runFFmpegCommand(List<String> command) throws IOException, InterruptedException {
@@ -352,12 +362,10 @@ public class FFmpegServiceImpl implements FFmpegService {
         File file = new File(path);
         if (file.exists()) {
             if (file.delete()) {
-                System.out.println("File deleted successfully.");
+                log.info("File deleted successfully.");
             } else {
-                System.out.println("Failed to delete the file.");
+                log.info("Failed to delete the file.");
             }
-        } else {
-            System.out.println("File does not exist.");
         }
     }
 }

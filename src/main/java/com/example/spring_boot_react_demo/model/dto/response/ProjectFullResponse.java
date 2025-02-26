@@ -1,6 +1,7 @@
 package com.example.spring_boot_react_demo.model.dto.response;
 
 import com.example.spring_boot_react_demo.model.entity.Background;
+import com.example.spring_boot_react_demo.model.entity.Lyric;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 import java.time.LocalDateTime;
@@ -20,4 +21,5 @@ public class ProjectFullResponse {
     String asset;
     List<VideoResponse> videos;
     Background background;
+    Long lyricId;
 }

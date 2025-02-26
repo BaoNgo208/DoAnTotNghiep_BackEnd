@@ -1,6 +1,5 @@
 package com.example.spring_boot_react_demo.model.entity;
 
-import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
@@ -22,7 +21,7 @@ public class Lyric {
     @Column(name = "lyric_text", nullable = false)
     String text;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "project_id", referencedColumnName = "project_id", nullable = false)
     @JsonIgnore
     Project project;

@@ -27,7 +27,8 @@ public class EntityMapper {
                 project.getSize(),
                 project.getAsset(),
                 videoResponses,
-                project.getBackground()
+                project.getBackground(),
+                project.getLyric().getId()
         );
     }
     public static VideoResponse maptoVideoResponse (Video video){

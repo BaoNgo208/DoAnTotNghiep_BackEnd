@@ -9,7 +9,7 @@ import java.util.List;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/api/lyrics")
+@RequestMapping("/lyrics")
 public class LyricController {
     @Autowired
     private LyricService lyricService;

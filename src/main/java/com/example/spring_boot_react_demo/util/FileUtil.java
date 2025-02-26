@@ -1,6 +1,7 @@
 package com.example.spring_boot_react_demo.util;
 import com.example.spring_boot_react_demo.model.MediaType;
 import org.springframework.web.multipart.MultipartFile;
+import java.io.*;
 import java.util.Arrays;
 import java.util.List;
 
@@ -40,5 +41,16 @@ public class FileUtil {
         } else {
             return "unknown";
         }
+    }
+
+    public static File createSrcFile(String text) {
+        File file = new File("lyrics.srt");
+
+        try (FileWriter writer = new FileWriter(file)) {
+            writer.write(text);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        return file;
     }
 }
