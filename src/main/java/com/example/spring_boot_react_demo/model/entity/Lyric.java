@@ -1,5 +1,7 @@
 package com.example.spring_boot_react_demo.model.entity;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
@@ -22,11 +24,6 @@ public class Lyric {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "project_id", referencedColumnName = "project_id", nullable = false)
+    @JsonIgnore
     Project project;
-
-    @Column(name = "start_time")
-    Double startTime;
-
-    @Column(name = "end_time")
-    Double endTime;
 }

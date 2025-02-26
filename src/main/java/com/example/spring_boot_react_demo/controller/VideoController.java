@@ -7,7 +7,6 @@ import com.example.spring_boot_react_demo.service.VideoService;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -34,5 +33,15 @@ public class VideoController {
         return ApiResponse.<String>builder()
                 .result(videoService.deleteVideo(videoId))
                 .build();
+    }
+
+    @PostMapping("/convert")
+    public ResponseEntity<String> convertVideo(@RequestParam("file") MultipartFile inputVideo, @RequestParam("outputFileExtension") String outputFormat) {
+        try {
+            String result = fFmpegService.convertVideo(inputVideo, outputFormat);
+            return new ResponseEntity<>(result, HttpStatus.OK);
+        } catch (Exception e) {
+            return new ResponseEntity<>("Error while converting video: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 }

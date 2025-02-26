@@ -4,5 +4,5 @@ import org.springframework.web.multipart.MultipartFile;
 
 public interface WhisperService {
     public MultipartFile transcribeAudio(MultipartFile audioFile);
-    public String processVideo(MultipartFile videoFile);
+    public String processVideo(MultipartFile videoFile, Long projectId);
 }

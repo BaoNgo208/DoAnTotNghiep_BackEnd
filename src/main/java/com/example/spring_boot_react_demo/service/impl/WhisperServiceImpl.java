@@ -1,5 +1,9 @@
 package com.example.spring_boot_react_demo.service.impl;
 
+import com.example.spring_boot_react_demo.model.entity.Lyric;
+import com.example.spring_boot_react_demo.model.entity.Project;
+import com.example.spring_boot_react_demo.repository.LyricRepo;
+import com.example.spring_boot_react_demo.repository.ProjectRepo;
 import com.example.spring_boot_react_demo.service.CloudinaryService;
 import com.example.spring_boot_react_demo.service.FFmpegService;
 import com.example.spring_boot_react_demo.service.WhisperService;
@@ -9,7 +13,6 @@ import lombok.extern.slf4j.Slf4j;
 import okhttp3.*;
 import org.cloudinary.json.JSONArray;
 import org.cloudinary.json.JSONObject;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -27,6 +30,8 @@ public class WhisperServiceImpl implements WhisperService {
 
     private final CloudinaryService cloudinaryService;
     private final FFmpegService ffmpegService;
+    private final LyricRepo lyricRepository;
+    private final ProjectRepo projectRepository;
 
     private final OkHttpClient httpClient = new OkHttpClient.Builder()
             .connectTimeout(30, TimeUnit.SECONDS)
@@ -91,13 +96,13 @@ public class WhisperServiceImpl implements WhisperService {
     }
 
     @Override
-    public String processVideo(MultipartFile videoFile) {
+    public String processVideo(MultipartFile videoFile, Long projectId) {
         try {
             MultipartFile srtFile = transcribeAudio(videoFile);
             if (srtFile == null) {
                 throw new IOException("Failed to generate subtitles for: " + videoFile.getOriginalFilename());
             }
-
+            saveSrtContent(srtFile,projectId);
             MultipartFile processedVideo = ffmpegService.addSrtToVideo(videoFile, srtFile);
             if (processedVideo == null) {
                 throw new IOException("Failed to generate video with subtitles for: " + videoFile.getOriginalFilename());
@@ -108,5 +113,16 @@ public class WhisperServiceImpl implements WhisperService {
             log.error("Error processing video: {}", videoFile.getOriginalFilename(), e);
             return null;
         }
+    }
+
+    private void saveSrtContent(MultipartFile srtFile, Long projectId) throws IOException {
+        Project project = projectRepository.findById(projectId)
+                .orElseThrow(() -> new IllegalArgumentException("Project not found with ID: " + projectId));
+
+        String srtContent = new String(srtFile.getBytes(), StandardCharsets.UTF_8);
+        Lyric lyric = new Lyric();
+        lyric.setText(srtContent);
+        lyric.setProject(project);
+        lyricRepository.save(lyric);
     }
 }

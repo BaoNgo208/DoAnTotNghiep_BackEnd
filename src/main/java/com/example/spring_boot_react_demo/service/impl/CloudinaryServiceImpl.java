@@ -4,7 +4,7 @@ import com.cloudinary.Cloudinary;
 import com.example.spring_boot_react_demo.model.MediaType;
 import com.example.spring_boot_react_demo.service.CloudinaryService;
 import static com.example.spring_boot_react_demo.util.Constants.*;
-import static com.example.spring_boot_react_demo.util.ConvertUtils.*;
+import static com.example.spring_boot_react_demo.util.ConvertUtils.convertFileToMultipartFile;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
