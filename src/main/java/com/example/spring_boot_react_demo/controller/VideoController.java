@@ -40,9 +40,9 @@ public class VideoController {
     }
 
     @PostMapping("/convert")
-    public ResponseEntity<String> convertVideo(@RequestParam String inputVideoPath, @RequestParam String outputVideoPath) {
+    public ResponseEntity<String> convertVideo(@RequestParam("file") MultipartFile inputVideo, @RequestParam("outputFileExtension") String outputFormat) {
         try {
-            String result = fFmpegService.convertAndUploadVideo(inputVideoPath, outputVideoPath);
+            String result = fFmpegService.convertVideo(inputVideo, outputFormat);
             return new ResponseEntity<>(result, HttpStatus.OK);
         } catch (Exception e) {
             return new ResponseEntity<>("Error while converting video: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);

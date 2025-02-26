@@ -17,7 +17,7 @@ public class CloudinaryServiceImpl implements CloudinaryService {
     private Cloudinary cloudinary;
 
     @Override
-    public String uploadFile(MultipartFile file, String resourceType) {
+    public String uploadFile(MultipartFile file, String folderName, String resourceType) {
         try {
             HashMap<Object, Object> options = new HashMap<>();
             options.put("folder", "folder_1");
@@ -63,7 +63,7 @@ public class CloudinaryServiceImpl implements CloudinaryService {
         }
         return fileName;
     }
-    public String uploadFile(MultipartFile file,String resourceType) {
+    public String uploadFile(MultipartFile file,String resourceType ) {
         try {
             HashMap<Object, Object> options = new HashMap<>();
             options.put("resource_type", resourceType);

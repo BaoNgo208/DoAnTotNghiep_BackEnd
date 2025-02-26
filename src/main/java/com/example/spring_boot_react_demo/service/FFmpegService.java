@@ -9,7 +9,7 @@ public interface FFmpegService {
     public String mergeAudio(MultipartFile file1 ,MultipartFile file2);
     public String cutMedia(MultipartFile file,String startTime,String endTime,String fileExtension);
     public String mergeMedia(List<MultipartFile> files,String fileExtension);
-    public String convertAndUploadVideo(String videoPath, String outputFormat);
+    public String convertVideo(MultipartFile file, String outputFormat);
     public String mixAudioVideo(String videoFile,String audioFile,String outputFile);
     public MultipartFile addSrtToVideo(MultipartFile videoFile, MultipartFile srtFile);
 }

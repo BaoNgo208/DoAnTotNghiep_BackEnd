@@ -169,32 +169,46 @@ public class FFmpegServiceImpl implements FFmpegService {
     }
 
     @Override
-    public String convertAndUploadVideo(String inputVideoPath, String outputFileName) {
+    public String convertVideo(MultipartFile inputVideo, String outputFileExtension) {
+        String outputVideoPath = "output" + outputFileExtension;
         try {
-            String outputVideoPath =  createDirectory() + File.separator + outputFileName;
-            executeFFmpegCommand(inputVideoPath, outputVideoPath);
-            File outputFile = new File(outputVideoPath);
-            if (!outputFile.exists() || outputFile.length() == Constants.ZERO) {
-                return "Video conversion failed. The output file is empty.";
-            }
-            MultipartFile multipartOutputFile = new MockMultipartFile(
-                    outputFile.getName(), outputFile.getName(), "video/mp4",
-                    Files.readAllBytes(outputFile.toPath())
-            );
-            String cloudinaryUrl = cloudinaryService.uploadFile(multipartOutputFile,
-                    "folder_1",
-                    MediaType.VIDEO.getname());
-            deleteFileIfExists(outputFile);
+            File tempFile = File.createTempFile("inputVideo", ".tmp");
+            inputVideo.transferTo(tempFile);
+            String inputVideoPath = tempFile.getAbsolutePath();
+            String command = "ffmpeg -i \"" + inputVideoPath + "\" \"" + outputVideoPath + "\"";
+            Process process = Runtime.getRuntime().exec(command);
+            StringBuilder output = new StringBuilder();
+            StringBuilder error = new StringBuilder();
+            Thread outputThread = new Thread(() -> {
+                try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
+                    String line;
+                    while ((line = reader.readLine()) != null) {
+                        output.append(line).append("\n");
+                    }
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            });
 
-            if (cloudinaryUrl != null && !cloudinaryUrl.isEmpty()) {
-                return cloudinaryUrl;
-            } else {
-                return "Error uploading to Cloudinary.";
-            }
+            Thread errorThread = new Thread(() -> {
+                try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getErrorStream()))) {
+                    String line;
+                    while ((line = reader.readLine()) != null) {
+                        error.append(line).append("\n");
+                    }
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            });
+            outputThread.start();
+            errorThread.start();
+            outputThread.join();
+            errorThread.join();
         } catch (IOException | InterruptedException e) {
             e.printStackTrace();
-            return "Error while converting video: " + e.getMessage();
+            return "Error while converting the video: " + e.getMessage();
         }
+        return outputVideoPath;
     }
 
     @Override
@@ -269,43 +283,6 @@ public class FFmpegServiceImpl implements FFmpegService {
             e.printStackTrace();
             return null;
         }
-    }
-
-    private String createDirectory() {
-        String uploadsDir = System.getProperty("user.dir") + File.separator + "uploads";
-        try {
-            Files.createDirectories(Paths.get(uploadsDir));
-        } catch (IOException e) {
-            e.printStackTrace();
-            return null;
-        }
-        return uploadsDir;
-    }
-
-    private void executeFFmpegCommand(String inputPath, String outputPath) throws IOException, InterruptedException {
-        ProcessBuilder processBuilder = new ProcessBuilder("ffmpeg", "-i", inputPath, outputPath);
-        processBuilder.redirectErrorStream(true);
-        Process process = processBuilder.start();
-        readFFmpegLogs(process);
-    }
-
-    private void readFFmpegLogs(Process process)  {
-        StringBuilder logOutput = new StringBuilder();
-        try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
-            String line;
-            while ((line = reader.readLine()) != null) {
-                logOutput.append(line).append("\n");
-            }
-            int exitCode = 0;
-            exitCode = process.waitFor();
-            if (exitCode != 0) {
-                System.err.println("FFmpeg error: \n" + logOutput);
-                throw new RuntimeException("\n" + "Video conversion failed");
-            }
-        } catch (IOException| InterruptedException e) {
-            throw new RuntimeException(e);
-        }
-        System.out.println(logOutput);
     }
 
     private void deleteFileIfExists(File file) {
