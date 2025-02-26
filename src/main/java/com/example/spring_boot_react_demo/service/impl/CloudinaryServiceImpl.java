@@ -63,4 +63,23 @@ public class CloudinaryServiceImpl implements CloudinaryService {
         }
         return fileName;
     }
+    public String uploadFile(MultipartFile file,String resourceType) {
+        try {
+            HashMap<Object, Object> options = new HashMap<>();
+            options.put("resource_type", resourceType);
+            Map uploadedFile = cloudinary.uploader().upload(file.getBytes(), options);
+            String publicId = (String) uploadedFile.get("public_id");
+            if (MediaType.VIDEO.name().toLowerCase().equals(resourceType)) {
+                return CLOUDINARY_UPLOAD_URL + MediaType.VIDEO.name().toLowerCase() + LOCAL_UPLOAD_URL + publicId + ".mp4";
+            } else if (MediaType.AUDIO.name().equals(resourceType)) {
+                return CLOUDINARY_UPLOAD_URL + MediaType.AUDIO.name().toLowerCase() + LOCAL_UPLOAD_URL + publicId + ".mp3";
+            } else if (MediaType.IMAGE.name().equals(resourceType)) {
+                return CLOUDINARY_UPLOAD_URL + MediaType.IMAGE.name().toLowerCase() + LOCAL_UPLOAD_URL + publicId + ".jpg";
+            }
+            return cloudinary.url().secure(true).generate(publicId);
+        } catch (IOException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
 }

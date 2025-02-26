@@ -11,11 +11,11 @@ public class FileUtil {
     );
 
     private static final List<String> VIDEO_TYPES = Arrays.asList(
-            "video/mp4", "video/mpeg", "video/quicktime", "video/x-msvideo", "video/x-matroska", "video/webm"
+            "video/mp4", "video/mpeg", "video/quicktime", "video/x-msvideo", "video/x-matroska", "video/webm", "video/avi"
     );
 
     private static final List<String> AUDIO_TYPES = Arrays.asList(
-            "audio/mpeg", "audio/ogg", "audio/wav", "audio/mp4", "audio/x-ms-wma"
+            "audio/mpeg", "audio/ogg", "audio/wav", "audio/mp3", "audio/x-ms-wma"
     );
 
     public static boolean isImage(MultipartFile file) {
