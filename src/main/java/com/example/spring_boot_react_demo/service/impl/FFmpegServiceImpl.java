@@ -1,15 +1,19 @@
 package com.example.spring_boot_react_demo.service.impl;
 
+import com.example.spring_boot_react_demo.model.MediaType;
 import com.example.spring_boot_react_demo.model.entity.Video;
+import com.example.spring_boot_react_demo.repository.BackgroundRepo;
 import com.example.spring_boot_react_demo.repository.VideoRepo;
 import com.example.spring_boot_react_demo.service.CloudinaryService;
 import com.example.spring_boot_react_demo.service.FFmpegService;
+import com.example.spring_boot_react_demo.util.Constants;
+import lombok.AccessLevel;
 import com.example.spring_boot_react_demo.util.ConvertUtils;
 import lombok.RequiredArgsConstructor;
+import lombok.experimental.FieldDefaults;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
-
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -18,9 +22,11 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
+@FieldDefaults(level =  AccessLevel.PRIVATE, makeFinal = true)
 public class FFmpegServiceImpl implements FFmpegService {
-    private final CloudinaryService cloudinaryService;
-    private final VideoRepo videoRepo;
+    CloudinaryService cloudinaryService;
+    VideoRepo videoRepo;
+    BackgroundRepo backgroundRepo;
 
     @Override
     public String extractAudio(String videoPath) {
@@ -154,7 +160,7 @@ public class FFmpegServiceImpl implements FFmpegService {
                     Files.readAllBytes(outputFile.toPath())
             );
 
-            String cloudinaryUrl = cloudinaryService.uploadFile(multipartOutputFile, "folder_1",resourceType);
+            String cloudinaryUrl = cloudinaryService.uploadFile(multipartOutputFile, resourceType);
             listFile.delete();
             for (File tempFile : tempFiles) {
                 tempFile.delete();
@@ -178,7 +184,7 @@ public class FFmpegServiceImpl implements FFmpegService {
             String outputVideoPath =  createDirectory() + File.separator + outputFileName;
             executeFFmpegCommand(inputVideoPath, outputVideoPath);
             File outputFile = new File(outputVideoPath);
-            if (!outputFile.exists() || outputFile.length() == 0) {
+            if (!outputFile.exists() || outputFile.length() == Constants.ZERO) {
                 return "Video conversion failed. The output file is empty.";
             }
             MultipartFile multipartOutputFile = new MockMultipartFile(
@@ -267,7 +273,7 @@ public class FFmpegServiceImpl implements FFmpegService {
                 output.append(line).append("\n");
             }
             MultipartFile mergedFile = ConvertUtils.convertFileToMultipartFile(outputFile);
-            String cloudinaryUrl = cloudinaryService.uploadFile(mergedFile, "folder_1","video");
+            String cloudinaryUrl = cloudinaryService.uploadFile(mergedFile, MediaType.VIDEO.name());
             tempVideoFile.delete();
             tempSubtitleFile.delete();
             outputFile.delete();

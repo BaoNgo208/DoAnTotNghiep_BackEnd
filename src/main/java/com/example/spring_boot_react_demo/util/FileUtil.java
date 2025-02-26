@@ -1,5 +1,5 @@
 package com.example.spring_boot_react_demo.util;
-import com.example.spring_boot_react_demo.model.File;
+import com.example.spring_boot_react_demo.model.MediaType;
 import org.springframework.web.multipart.MultipartFile;
 import java.util.Arrays;
 import java.util.List;
@@ -32,11 +32,11 @@ public class FileUtil {
 
     public static String getFileType(MultipartFile file) {
         if (isImage(file)) {
-            return File.IMAGE.name();
+            return MediaType.IMAGE.name();
         } else if (isVideo(file)) {
-            return File.VIDEO.name();
+            return MediaType.VIDEO.name();
         } else if (isAudio(file)) {
-            return File.AUDIO.name();
+            return MediaType.AUDIO.name();
         } else {
             return "unknown";
         }

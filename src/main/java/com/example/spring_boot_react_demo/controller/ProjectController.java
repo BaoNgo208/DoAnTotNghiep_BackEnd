@@ -18,7 +18,7 @@ import org.springframework.web.bind.annotation.*;
 @FieldDefaults(level =  AccessLevel.PRIVATE, makeFinal = true)
 public class ProjectController {
     @Autowired
-    private final ProjectService projectService;
+    ProjectService projectService;
 
     @PostMapping("/createProject")
     public ApiResponse<CreateProjectResponse> createProject(@RequestBody CreateProjectRequest createProjectRequest) {
