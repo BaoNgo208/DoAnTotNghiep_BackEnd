@@ -5,16 +5,13 @@ import com.example.spring_boot_react_demo.repository.VideoRepo;
 import com.example.spring_boot_react_demo.service.CloudinaryService;
 import com.example.spring_boot_react_demo.service.FFmpegService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.HttpStatusCode;
-import org.springframework.http.ResponseEntity;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
 import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -172,9 +169,82 @@ public class FFmpegServiceImpl implements FFmpegService {
             e.printStackTrace();
             return "Error while merging media.";
         }
-
     }
 
+    @Override
+    public String convertAndUploadVideo(String inputVideoPath, String outputFileName) {
+        try {
+            String outputVideoPath =  createDirectory() + File.separator + outputFileName;
+            executeFFmpegCommand(inputVideoPath, outputVideoPath);
+            File outputFile = new File(outputVideoPath);
+            if (!outputFile.exists() || outputFile.length() == 0) {
+                return "Video conversion failed. The output file is empty.";
+            }
+            MultipartFile multipartOutputFile = new MockMultipartFile(
+                    outputFile.getName(), outputFile.getName(), "video/mp4",
+                    Files.readAllBytes(outputFile.toPath())
+            );
+            String cloudinaryUrl = cloudinaryService.export(multipartOutputFile,
+                    "converted_videos",
+                    "video");
+            deleteFileIfExists(outputFile);
 
+            if (cloudinaryUrl != null && !cloudinaryUrl.isEmpty()) {
+                Video newVideo = new Video();
+                newVideo.setUrl(cloudinaryUrl);
+                videoRepo.save(newVideo);
+                return cloudinaryUrl;
+            } else {
+                return "Error uploading to Cloudinary.";
+            }
+        } catch (IOException | InterruptedException e) {
+            e.printStackTrace();
+            return "Error while converting video: " + e.getMessage();
+        }
+    }
 
+    private String createDirectory() {
+        String uploadsDir = System.getProperty("user.dir") + File.separator + "uploads";
+        try {
+            Files.createDirectories(Paths.get(uploadsDir));
+        } catch (IOException e) {
+            e.printStackTrace();
+            return null;
+        }
+        return uploadsDir;
+    }
+
+    private void executeFFmpegCommand(String inputPath, String outputPath) throws IOException, InterruptedException {
+        ProcessBuilder processBuilder = new ProcessBuilder("ffmpeg", "-i", inputPath, outputPath);
+        processBuilder.redirectErrorStream(true);
+        Process process = processBuilder.start();
+        readFFmpegLogs(process);
+    }
+
+    private void readFFmpegLogs(Process process)  {
+        StringBuilder logOutput = new StringBuilder();
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                logOutput.append(line).append("\n");
+            }
+            int exitCode = 0;
+            exitCode = process.waitFor();
+            if (exitCode != 0) {
+                System.err.println("FFmpeg error: \n" + logOutput);
+                throw new RuntimeException("\n" + "Video conversion failed");
+            }
+        } catch (IOException| InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+        System.out.println(logOutput);
+    }
+
+    private void deleteFileIfExists(File file) {
+        try {
+            Files.deleteIfExists(file.toPath());
+        } catch (IOException e) {
+            System.err.println("Cannot delete file: " + file.getAbsolutePath());
+        }
+    }
 }

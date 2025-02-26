@@ -22,23 +22,37 @@ public class CloudinaryServiceImpl implements CloudinaryService {
             HashMap<Object, Object> options = new HashMap<>();
             options.put("folder", folderName);
             options.put("resource_type", resourceType);
-
             Map uploadedFile = cloudinary.uploader().upload(file.getBytes(), options);
             String publicId = (String) uploadedFile.get("public_id");
-
             if ("video".equals(resourceType)) {
                 return fileUploadURL + publicId + ".mp4";
             } else if ("audio".equals(resourceType)) {
                 return fileUploadURL + publicId + ".mp3";
             }
-
             return cloudinary.url().secure(true).generate(publicId);
-
         } catch (IOException e) {
             e.printStackTrace();
             return null;
         }
     }
 
-
+    @Override
+    public String export(MultipartFile file, String folderName, String resourceType) {
+        try {
+            HashMap<Object, Object> options = new HashMap<>();
+            options.put("folder", folderName);
+            options.put("resource_type", resourceType);
+            String originalFilename = file.getOriginalFilename();
+            String extension = "";
+            if (originalFilename != null && originalFilename.contains(".")) {
+                extension = originalFilename.substring(originalFilename.lastIndexOf("."));
+            }
+            Map uploadedFile = cloudinary.uploader().upload(file.getBytes(), options);
+            String publicId = (String) uploadedFile.get("public_id");
+            return fileUploadURL + publicId + extension;
+        } catch (IOException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
 }
