@@ -11,5 +11,5 @@ public interface FFmpegService {
     public String mergeMedia(List<MultipartFile> files,String fileExtension);
     public String convertAndUploadVideo(String videoPath, String outputFormat);
     public String mixAudioVideo(String videoFile,String audioFile,String outputFile);
-    public String addSrtToVideo(MultipartFile videoFile, MultipartFile srtFile);
+    public MultipartFile addSrtToVideo(MultipartFile videoFile, MultipartFile srtFile);
 }

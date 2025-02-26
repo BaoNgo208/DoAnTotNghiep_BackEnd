@@ -30,13 +30,11 @@ import static com.example.spring_boot_react_demo.util.EntityMapper.*;
 public class BackgroundServiceImpl implements BackgroundService {
 
     @Autowired
-    ProjectRepo projectRepo;
-
+    private final ProjectRepo projectRepo;
     @Autowired
-    BackgroundRepo backgroundRepo;
-
+    private final BackgroundRepo backgroundRepo;
     @Autowired
-    CloudinaryService cloudinaryService;
+    private final CloudinaryService cloudinaryService;
 
     @Override
     public List<BackgroundResponse> addBackground(List<MultipartFile> files, Long projectId) {
@@ -73,7 +71,7 @@ public class BackgroundServiceImpl implements BackgroundService {
             throw new AppException(ErrorCode.INVALID_VIDEO_FORMAT);
         }
         Background background = new Background();
-        background.setAsset(cloudinaryService.uploadFile(file, filetype));
+        background.setAsset(cloudinaryService.uploadFile(file,"folder_1", filetype));
         background.setType(filetype);
         background.setProject(projectRepo.findById(projectId)
                 .orElseThrow(()-> new AppException(ErrorCode.PROJECT_NOT_FOUND)));

@@ -15,4 +15,7 @@ public class ConvertUtils {
                 new FileInputStream(file)
         );
     }
+    public static MultipartFile convertByteArrayToMultipartFile(byte[] fileData, String fileName) {
+        return new MockMultipartFile(fileName, fileName, "video/mp4", fileData);
+    }
 }

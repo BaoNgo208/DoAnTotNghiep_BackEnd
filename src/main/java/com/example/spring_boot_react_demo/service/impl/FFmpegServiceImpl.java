@@ -24,9 +24,9 @@ import java.util.List;
 @RequiredArgsConstructor
 @FieldDefaults(level =  AccessLevel.PRIVATE, makeFinal = true)
 public class FFmpegServiceImpl implements FFmpegService {
-    CloudinaryService cloudinaryService;
-    VideoRepo videoRepo;
-    BackgroundRepo backgroundRepo;
+    private final CloudinaryService cloudinaryService;
+    private final VideoRepo videoRepo;
+    private final BackgroundRepo backgroundRepo;
 
     @Override
     public String extractAudio(String videoPath) {
@@ -241,7 +241,7 @@ public class FFmpegServiceImpl implements FFmpegService {
     }
 
     @Override
-    public String addSrtToVideo(MultipartFile videoFile, MultipartFile srtFile) {
+    public MultipartFile addSrtToVideo(MultipartFile videoFile, MultipartFile srtFile) {
         try {
             File tempVideoFile = File.createTempFile("temp_video_", ".mp4");
             File tempSubtitleFile = File.createTempFile("temp_subtitle_", ".srt");
@@ -277,11 +277,11 @@ public class FFmpegServiceImpl implements FFmpegService {
             tempVideoFile.delete();
             tempSubtitleFile.delete();
             outputFile.delete();
-            return cloudinaryUrl != null ? cloudinaryUrl : "Error uploading merged file to Cloudinary.";
+            return mergedFile;
 
         } catch (IOException e) {
             e.printStackTrace();
-            return " Error during processing: " + e.getMessage();
+            return null;
         }
     }
 

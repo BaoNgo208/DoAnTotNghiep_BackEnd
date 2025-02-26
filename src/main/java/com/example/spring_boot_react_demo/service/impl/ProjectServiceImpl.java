@@ -26,8 +26,8 @@ import java.util.List;
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class ProjectServiceImpl implements ProjectService {
-    ProjectRepo projectRepo;
-    BackgroundService backgroundService;
+    private final ProjectRepo projectRepo;
+    private final BackgroundService backgroundService;
 
     @Override
     public CreateProjectResponse createProject(CreateProjectRequest createProjectRequest) {

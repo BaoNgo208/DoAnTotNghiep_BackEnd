@@ -17,20 +17,19 @@ public class CloudinaryServiceImpl implements CloudinaryService {
     private Cloudinary cloudinary;
 
     @Override
-    public String uploadFile(MultipartFile file, String resourceType) {
+    public String uploadFile(MultipartFile file, String folderName, String resourceType) {
         try {
             HashMap<Object, Object> options = new HashMap<>();
-            options.put("folder", "folder_1");
+            options.put("folder", folderName);
             options.put("resource_type", resourceType);
             Map uploadedFile = cloudinary.uploader().upload(file.getBytes(), options);
             String publicId = (String) uploadedFile.get("public_id");
-
-            if (MediaType.VIDEO.name().equals(resourceType)) {
-                return CLOUDINARY_UPLOAD_URL + MediaType.VIDEO.name() + LOCAL_UPLOAD_URL + publicId + ".mp4";
+            if (MediaType.VIDEO.name().toLowerCase().equals(resourceType)) {
+                return CLOUDINARY_UPLOAD_URL + MediaType.VIDEO.name().toLowerCase() + LOCAL_UPLOAD_URL + publicId + ".mp4";
             } else if (MediaType.AUDIO.name().equals(resourceType)) {
-                return CLOUDINARY_UPLOAD_URL + MediaType.AUDIO.name() + LOCAL_UPLOAD_URL + publicId + ".mp3";
+                return CLOUDINARY_UPLOAD_URL + MediaType.AUDIO.name().toLowerCase() + LOCAL_UPLOAD_URL + publicId + ".mp3";
             } else if (MediaType.IMAGE.name().equals(resourceType)) {
-                return CLOUDINARY_UPLOAD_URL + MediaType.IMAGE.name() + LOCAL_UPLOAD_URL + publicId + ".jpg";
+                return CLOUDINARY_UPLOAD_URL + MediaType.IMAGE.name().toLowerCase() + LOCAL_UPLOAD_URL + publicId + ".jpg";
             }
             return cloudinary.url().secure(true).generate(publicId);
         } catch (IOException e) {
@@ -38,7 +37,6 @@ public class CloudinaryServiceImpl implements CloudinaryService {
             return null;
         }
     }
-
     @Override
     public boolean deleteFile(String fileUrl, String resourceType) {
         try {

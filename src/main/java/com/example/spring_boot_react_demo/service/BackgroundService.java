@@ -10,5 +10,5 @@ import java.util.List;
 public interface BackgroundService {
     public List<BackgroundResponse> addBackground(List<MultipartFile> files, Long projectId);
     public String deleteBackground(Long id);
-    public Background updateBackground(BackgroundRequest backgroundRequest);
+    public void updateBackground(BackgroundRequest backgroundRequest);
 }
