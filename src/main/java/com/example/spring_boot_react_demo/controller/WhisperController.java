@@ -15,7 +15,6 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class WhisperController {
 
-    @Autowired
     private final WhisperService whisperService;
 
     @PostMapping("/process")

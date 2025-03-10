@@ -68,11 +68,17 @@ public class ProjectServiceImpl implements ProjectService {
     @Override
     public String addBackground(Long projectId, MultipartFile backgroundFile) {
         Project project =  getProjectById(projectId);
-        String projectBackground = cloudinaryService.uploadFile(backgroundFile,"folder_1", MediaType.IMAGE.getname());
+        String projectBackground = cloudinaryService.uploadFile(backgroundFile,MediaType.IMAGE.getname());
         Background background = backgroundService.createBackground(project, projectBackground);
         project.setBackground(background);
         projectRepo.save(project);
         return "Success";
+    }
+
+    @Override
+    public String exportProject(Long projectId, String outputVideoPath) {
+        Project project = getProjectById(projectId);
+        return ffmpegService.createFullVideo(project, outputVideoPath);
     }
 
     private Project getProjectById(Long projectId){

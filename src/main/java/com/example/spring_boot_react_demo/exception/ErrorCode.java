@@ -14,7 +14,11 @@ public enum ErrorCode {
     BACKGROUND_NOT_FOUND("background not found", HttpStatus.NOT_FOUND),
     VIDEO_NOT_FOUND("video not found", HttpStatus.NOT_FOUND),
     FFMPEG_CREATE_VIDEO_FAIL("FFmpeg processing failed  for create video", HttpStatus.BAD_REQUEST),
-    FFMPEG_OVERLAY_VIDEO_FAIL("FFmpeg processing failed  for overlay video", HttpStatus.BAD_REQUEST)
+    FFMPEG_OVERLAY_VIDEO_FAIL("FFmpeg processing failed  for overlay video", HttpStatus.BAD_REQUEST),
+    PROCESS_FAILED("Process failed", HttpStatus.INTERNAL_SERVER_ERROR),
+    DELETE_FILE_FAIL("Cannot delete file", HttpStatus.INTERNAL_SERVER_ERROR),
+    CREATE_FILE_FAIL("Cannot create file", HttpStatus.INTERNAL_SERVER_ERROR),
+    FILE_NOT_FOUND("File not found", HttpStatus.NOT_FOUND),
     ;
 
     private final String message;

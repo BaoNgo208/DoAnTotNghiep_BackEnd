@@ -19,33 +19,20 @@ import java.util.List;
 @RequestMapping("/video")
 @FieldDefaults(level =  AccessLevel.PRIVATE, makeFinal = true)
 public class VideoController {
-    @Autowired
     VideoService videoService;
-
-    @Autowired
     FFmpegService fFmpegService;
 
     @PostMapping()
-    public ApiResponse<List<VideoResponse>> addBackground(@RequestParam List<MultipartFile> files, @RequestParam Long projectId) {
+    public ApiResponse<List<VideoResponse>> addVideo(@RequestParam List<MultipartFile> files, @RequestParam Long projectId) {
         return ApiResponse.<List<VideoResponse>>builder()
                 .result(videoService.addVideo( files, projectId))
                 .build();
     }
 
     @DeleteMapping()
-    public ApiResponse<String> deleteBackground(@RequestParam Long videoId) {
+    public ApiResponse<String> deleteVideo(@RequestParam Long videoId) {
         return ApiResponse.<String>builder()
                 .result(videoService.deleteVideo(videoId))
                 .build();
-    }
-
-    @PostMapping("/convert")
-    public ResponseEntity<String> convertVideo(@RequestParam("file") MultipartFile inputVideo, @RequestParam("outputFileExtension") String outputFormat) {
-        try {
-            String result = fFmpegService.convertVideo(inputVideo, outputFormat);
-            return new ResponseEntity<>(result, HttpStatus.OK);
-        } catch (Exception e) {
-            return new ResponseEntity<>("Error while converting video: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
-        }
     }
 }

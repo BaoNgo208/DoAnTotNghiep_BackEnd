@@ -5,6 +5,7 @@ import com.example.spring_boot_react_demo.exception.ErrorCode;
 import com.example.spring_boot_react_demo.model.MediaType;
 import com.example.spring_boot_react_demo.model.dto.request.VideoRequest;
 import com.example.spring_boot_react_demo.model.dto.response.VideoResponse;
+import com.example.spring_boot_react_demo.model.entity.Project;
 import com.example.spring_boot_react_demo.model.entity.Video;
 import com.example.spring_boot_react_demo.repository.ProjectRepo;
 import com.example.spring_boot_react_demo.repository.VideoRepo;
@@ -41,8 +42,10 @@ public class VideoServiceImpl implements VideoService {
     @Override
     public List<VideoResponse> addVideo(List<MultipartFile> files, Long projectId) {
         List<VideoResponse> assets = new ArrayList<>();
+        Project project = projectRepo.findById(projectId)
+                .orElseThrow(() -> new AppException(ErrorCode.PROJECT_NOT_FOUND));
         for (MultipartFile file : files) {
-            assets.add(addVideo(file, projectId));
+            assets.add(addVideo(file, project));
         }
         return assets;
     }
@@ -66,16 +69,14 @@ public class VideoServiceImpl implements VideoService {
         videoRepo.save(video);
     }
 
-    public VideoResponse addVideo(MultipartFile file, Long projectId) {
+    public VideoResponse addVideo(MultipartFile file, Project project) {
         String filetype = getFileType(file);
-        log.info("VIDEO: {}", MediaType.VIDEO.getname());
         if (!filetype.equals(MediaType.VIDEO.getname())) {
             throw new AppException(ErrorCode.INVALID_VIDEO_FORMAT);
         }
         Video video = new Video();
-        video.setAsset(cloudinaryService.uploadFile(file, "folder_1",filetype));
-        video.setProject(projectRepo.findById(projectId)
-                .orElseThrow(() -> new AppException(ErrorCode.PROJECT_NOT_FOUND)));
+        video.setAsset(cloudinaryService.uploadFile(file, filetype));
+        video.setProject(project);
         video.setUploadTime(LocalDateTime.now());
         return maptoVideoResponse(videoRepo.save(video));
     }

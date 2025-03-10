@@ -59,7 +59,6 @@ public class WhisperServiceImpl implements WhisperService {
                 .addFormDataPart("file", audioFile.getOriginalFilename(), RequestBody.create(audioFile.getBytes(), MEDIA_TYPE_AUDIO))
                 .addFormDataPart("response_format", "verbose_json")
                 .build();
-
         return new Request.Builder()
                 .url(Constants.API_URL)
                 .post(requestBody)
@@ -104,7 +103,7 @@ public class WhisperServiceImpl implements WhisperService {
                 throw new IOException("Failed to generate video with subtitles for: " + videoFile.getOriginalFilename());
             }
 
-            return cloudinaryService.uploadFile(processedVideo, "folder_1", "video");
+            return cloudinaryService.uploadFile(processedVideo, "video");
         } catch (Exception e) {
             log.error("Error processing video: {}", videoFile.getOriginalFilename(), e);
             return null;

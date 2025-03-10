@@ -1,41 +1,35 @@
 package com.example.spring_boot_react_demo.service.impl;
 
+import com.example.spring_boot_react_demo.exception.AppException;
+import com.example.spring_boot_react_demo.exception.ErrorCode;
 import com.example.spring_boot_react_demo.model.MediaType;
+import com.example.spring_boot_react_demo.model.entity.Project;
+import com.example.spring_boot_react_demo.model.entity.Video;
+import com.example.spring_boot_react_demo.repository.ProjectRepo;
 import com.example.spring_boot_react_demo.service.CloudinaryService;
 import com.example.spring_boot_react_demo.service.FFmpegService;
-import com.example.spring_boot_react_demo.util.Constants;
+import static com.example.spring_boot_react_demo.util.Constants.*;
+import static com.example.spring_boot_react_demo.util.ConvertUtils.*;
 import lombok.AccessLevel;
-import com.example.spring_boot_react_demo.util.ConvertUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import java.io.*;
 import java.nio.file.*;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @FieldDefaults(level =  AccessLevel.PRIVATE, makeFinal = true)
 public class FFmpegServiceImpl implements FFmpegService {
     CloudinaryService cloudinaryService;
-
-    @Override
-    public String extractAudio(String videoPath) {
-        String audioPath = videoPath.replace(".mp4", ".mp3");
-        String command = "ffmpeg -i " + videoPath + " -vn -acodec mp3 " + audioPath;
-
-        try {
-            Process process = Runtime.getRuntime().exec(command);
-            process.waitFor();
-            return "Audio extraction completed, output saved to: " + audioPath;
-        } catch (IOException | InterruptedException e) {
-            e.printStackTrace();
-            return "Error during audio extraction";
-        }
-    }
+    ProjectRepo projectRepo;
 
     @Override
     public String cutAudio(MultipartFile file, String startTime, String endTime) {
@@ -90,7 +84,6 @@ public class FFmpegServiceImpl implements FFmpegService {
             return "Error while merging audio.";
         }
     }
-
     @Override
     public String cutMedia(MultipartFile file, String startTime, String endTime,String fileExtension) {
         try {
@@ -114,7 +107,6 @@ public class FFmpegServiceImpl implements FFmpegService {
             return "Error while cutting media.";
         }
     }
-
     @Override
     public String mergeMedia(List<MultipartFile> files, String fileExtension) {
         try {
@@ -154,7 +146,7 @@ public class FFmpegServiceImpl implements FFmpegService {
                     Files.readAllBytes(outputFile.toPath())
             );
 
-            String cloudinaryUrl = cloudinaryService.uploadFile(multipartOutputFile,"folder_1", resourceType);
+            String cloudinaryUrl = cloudinaryService.uploadFile(multipartOutputFile,resourceType);
             listFile.delete();
             for (File tempFile : tempFiles) {
                 tempFile.delete();
@@ -167,50 +159,6 @@ public class FFmpegServiceImpl implements FFmpegService {
             return "Error while merging media.";
         }
     }
-
-    @Override
-    public String convertVideo(MultipartFile inputVideo, String outputFileExtension) {
-        String outputVideoPath = "output" + outputFileExtension;
-        try {
-            File tempFile = File.createTempFile("inputVideo", ".tmp");
-            inputVideo.transferTo(tempFile);
-            String inputVideoPath = tempFile.getAbsolutePath();
-            String command = "ffmpeg -i \"" + inputVideoPath + "\" \"" + outputVideoPath + "\"";
-            Process process = Runtime.getRuntime().exec(command);
-            StringBuilder output = new StringBuilder();
-            StringBuilder error = new StringBuilder();
-            Thread outputThread = new Thread(() -> {
-                try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
-                    String line;
-                    while ((line = reader.readLine()) != null) {
-                        output.append(line).append("\n");
-                    }
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            });
-
-            Thread errorThread = new Thread(() -> {
-                try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getErrorStream()))) {
-                    String line;
-                    while ((line = reader.readLine()) != null) {
-                        error.append(line).append("\n");
-                    }
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            });
-            outputThread.start();
-            errorThread.start();
-            outputThread.join();
-            errorThread.join();
-        } catch (IOException | InterruptedException e) {
-            e.printStackTrace();
-            return "Error while converting the video: " + e.getMessage();
-        }
-        return outputVideoPath;
-    }
-
     @Override
     public String mixAudioVideo(String videoFile, String audioFile, String outputFile) {
         try {
@@ -240,7 +188,6 @@ public class FFmpegServiceImpl implements FFmpegService {
             return "Merge failed: " + e.getMessage();
         }
     }
-
     @Override
     public MultipartFile addSrtToVideo(MultipartFile videoFile, MultipartFile srtFile) {
         try {
@@ -273,7 +220,7 @@ public class FFmpegServiceImpl implements FFmpegService {
                 System.out.println(line);
                 output.append(line).append("\n");
             }
-            MultipartFile mergedFile = ConvertUtils.convertFileToMultipartFile(outputFile);
+            MultipartFile mergedFile = convertFileToMultipartFile(outputFile);
             tempVideoFile.delete();
             tempSubtitleFile.delete();
             outputFile.delete();
@@ -285,11 +232,159 @@ public class FFmpegServiceImpl implements FFmpegService {
         }
     }
 
-    private void deleteFileIfExists(File file) {
+    @Override
+    public String createFullVideo(Project project, String outputVideoPath) {
+        String black_video = createBlackBackgroundVideo(project.getLength());
+        String merge_video = processVideos(project, black_video);
+        String newOutput = "output" + ".mp4";
+        if (project.getBackground() != null) {
+            addBackground(project.getBackground().getAsset(),
+                    merge_video,
+                    newOutput);
+        }
+        newOutput = convertVideo(newOutput, outputVideoPath);
+        File outputFile = new File(newOutput);
+        if (outputFile.exists()) {
+            project.setAsset(cloudinaryService.uploadFile(outputFile, MediaType.VIDEO.getname()));
+            projectRepo.save(project);
+            deleteFileIfExists(newOutput);
+        } else {
+            throw new AppException(ErrorCode.FILE_NOT_FOUND);
+        }
+        return project.getAsset();
+    }
+
+    private String convertVideo(String inputVideoPath, String outputFileExtension) {
+        String outputVideoPath = "output" + outputFileExtension;
         try {
-            Files.deleteIfExists(file.toPath());
-        } catch (IOException e) {
-            System.err.println("Cannot delete file: " + file.getAbsolutePath());
+            runFFmpegCommand(Arrays.asList(
+                    "ffmpeg", "-y",
+                    "-i", inputVideoPath,
+                    outputVideoPath
+            ));
+        }catch (IOException | InterruptedException e){
+            e.printStackTrace();
+        }
+        deleteFileIfExists(inputVideoPath);
+        return outputVideoPath;
+    }
+
+    private String processVideos(Project project, String videoPath) {
+        int index = 1;
+        for (Video video : project.getVideo()) {
+            String newOutput = "output_" + index++ + ".mp4";
+            videoPath = overlayVideo(videoPath, video.getAsset(), video.getStartTime(), newOutput);
+        }
+        return videoPath;
+    }
+
+    private String overlayVideo(String backgroundVideoPath, String overlayVideoPath, double startTime, String outputPath) {
+        try {
+            runFFmpegCommand(Arrays.asList(
+                    "ffmpeg", "-y",
+                    "-i", backgroundVideoPath,
+                    "-i", overlayVideoPath,
+                    "-filter_complex",
+                    "[1:v]setpts=PTS-STARTPTS+" + startTime + "/TB[v1]; " +
+                            "[1:a]adelay=" + (int)(startTime * 1000) + "|" + (int)(startTime * 1000) + "[a1]; " +
+                            "[0:a][a1]amix=inputs=2:duration=first[aout]; " +
+                            "[0:v][v1]overlay=W/2-w/2:H/2-h/2[v]",
+                    "-map", "[v]",
+                    "-map", "[aout]",
+                    "-c:v", "libx264",
+                    "-c:a", "aac", "-b:a", "192k",
+                    outputPath
+            ));
+            deleteFileIfExists(backgroundVideoPath);
+            return outputPath;
+        } catch (IOException | InterruptedException e) {
+            throw new AppException(ErrorCode.FFMPEG_OVERLAY_VIDEO_FAIL);
+        }
+    }
+
+    private String createBlackBackgroundVideo(Double duration) {
+        try {
+            String outputPath = "black_video" + ".mp4";
+            runFFmpegCommand(Arrays.asList(
+                    "ffmpeg", "-y",
+                    "-f", "lavfi", "-t", String.valueOf(duration), "-i", "color=c=black:s=1280x720",
+                    "-f", "lavfi", "-t", String.valueOf(duration), "-i", "anullsrc=r=44100:cl=stereo",
+                    "-c:v", "libx264", "-c:a", "aac",
+                    outputPath
+            ));
+            return outputPath;
+        } catch (IOException | InterruptedException e) {
+            throw new AppException(ErrorCode.FFMPEG_CREATE_VIDEO_FAIL);
+        }
+    }
+
+    private String addBackground (String backgroundPath, String videoPath, String outputPath) {
+        try{
+            runFFmpegCommand(Arrays.asList(
+                    "ffmpeg", "-y",
+                    "-i", backgroundPath,
+                    "-i", videoPath,
+                    "-filter_complex", "[0:v]scale=1280:720[bg];[1:v]scale=1280:720[fg];[fg][bg]overlay=(W-w)/2:(H-h)/2[out]",
+                    "-map", "[out]", "-map", "1:a",
+                    "-c:v", "libx264", "-crf", "18", "-preset", "ultrafast",
+                    "-c:a", "aac",
+                    outputPath
+            ));
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+        deleteFileIfExists(videoPath);
+        return outputPath;
+    }
+
+    private void runFFmpegCommand(List<String> command) throws IOException, InterruptedException {
+        ProcessBuilder processBuilder = new ProcessBuilder(command);
+        processBuilder.redirectErrorStream(true);
+        Process process = processBuilder.start();
+
+        StringBuilder output = new StringBuilder();
+        StringBuilder error = new StringBuilder();
+        Thread outputThread = new Thread(() -> {
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    output.append(line).append("\n");
+                    System.out.println(line);
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        });
+        Thread errorThread = new Thread(() -> {
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getErrorStream()))) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    error.append(line).append("\n");
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        });
+
+        outputThread.start();
+        errorThread.start();
+        int exitCode = process.waitFor();
+        outputThread.join();
+        errorThread.join();
+        if (exitCode != 0) {
+            throw new RuntimeException("FFmpeg execution failed:\n" + error.toString());
+        }
+    }
+    private void deleteFileIfExists(String path) {
+        File file = new File(path);
+        if (file.exists()) {
+            if (file.delete()) {
+                System.out.println("File deleted successfully.");
+            } else {
+                System.out.println("Failed to delete the file.");
+            }
+        } else {
+            System.out.println("File does not exist.");
         }
     }
 }

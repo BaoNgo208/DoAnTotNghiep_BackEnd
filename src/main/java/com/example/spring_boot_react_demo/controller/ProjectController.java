@@ -27,14 +27,12 @@ public class ProjectController {
                 .result(projectService.createProject(createProjectRequest))
                 .build();
     }
-
     @GetMapping
     public ApiResponse<ProjectFullResponse> getProjectById(@RequestParam Long id) {
         return ApiResponse.<ProjectFullResponse>builder()
                 .result(projectService.getProject(id))
                 .build();
     }
-
     @PatchMapping("/updateProject")
     public ApiResponse<String> UpdateProject(@RequestBody UpdateProjectRequest updateProjectRequest) {
         return ApiResponse.<String>builder()
@@ -46,6 +44,12 @@ public class ProjectController {
                                              @RequestParam MultipartFile backgroundFile) {
         return ApiResponse.<String>builder()
                 .result(projectService.addBackground(projectId, backgroundFile))
+                .build();
+    }
+    @GetMapping("/exportProject")
+    public ApiResponse<String> exportProject(@RequestParam Long projectId, @RequestParam String outputVideoPath) {
+        return ApiResponse.<String>builder()
+                .result(projectService.exportProject(projectId, outputVideoPath))
                 .build();
     }
 }
