@@ -24,6 +24,7 @@ public class EntityMapper {
                 project.getName(),
                 project.getUploadTime(),
                 project.getLength(),
+                project.getSize(),
                 project.getAsset(),
                 videoResponses,
                 project.getBackground()

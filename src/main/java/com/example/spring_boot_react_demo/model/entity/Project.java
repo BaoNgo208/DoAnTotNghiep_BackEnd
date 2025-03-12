@@ -31,6 +31,9 @@ public class Project {
     @Column(name ="project_length")
     Double length ;
 
+    @Column(name ="project_size")
+    String size ;
+
     @Column(name = "project_asset")
     String asset;
 

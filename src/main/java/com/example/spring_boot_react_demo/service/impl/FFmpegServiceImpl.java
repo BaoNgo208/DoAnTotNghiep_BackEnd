@@ -234,15 +234,18 @@ public class FFmpegServiceImpl implements FFmpegService {
 
     @Override
     public String createFullVideo(Project project, String outputVideoPath) {
-        String black_video = createBlackBackgroundVideo(project.getLength());
-        String merge_video = processVideos(project, black_video);
-        String newOutput = "output" + ".mp4";
+        String size = project.getSize() == null ? "1280x720" : project.getSize();
+
+        String blackVideo = createBlackBackgroundVideo(project.getLength(), size, outputVideoPath);
+        String mergeVideo = processVideos(project, blackVideo, outputVideoPath);
+        String newOutput = mergeVideo;
         if (project.getBackground() != null) {
+            newOutput =  "output" + outputVideoPath;
             addBackground(project.getBackground().getAsset(),
-                    merge_video,
+                    mergeVideo,
+                    size,
                     newOutput);
         }
-        newOutput = convertVideo(newOutput, outputVideoPath);
         File outputFile = new File(newOutput);
         if (outputFile.exists()) {
             project.setAsset(cloudinaryService.uploadFile(outputFile, MediaType.VIDEO.getname()));
@@ -254,25 +257,10 @@ public class FFmpegServiceImpl implements FFmpegService {
         return project.getAsset();
     }
 
-    private String convertVideo(String inputVideoPath, String outputFileExtension) {
-        String outputVideoPath = "output" + outputFileExtension;
-        try {
-            runFFmpegCommand(Arrays.asList(
-                    "ffmpeg", "-y",
-                    "-i", inputVideoPath,
-                    outputVideoPath
-            ));
-        }catch (IOException | InterruptedException e){
-            e.printStackTrace();
-        }
-        deleteFileIfExists(inputVideoPath);
-        return outputVideoPath;
-    }
-
-    private String processVideos(Project project, String videoPath) {
-        int index = 1;
+    private String processVideos(Project project, String videoPath, String outputVideoPath) {
+        int index = ONE;
         for (Video video : project.getVideo()) {
-            String newOutput = "output_" + index++ + ".mp4";
+            String newOutput = "output_" + index++ + outputVideoPath;
             videoPath = overlayVideo(videoPath, video.getAsset(), video.getStartTime(), newOutput);
         }
         return videoPath;
@@ -302,12 +290,12 @@ public class FFmpegServiceImpl implements FFmpegService {
         }
     }
 
-    private String createBlackBackgroundVideo(Double duration) {
+    private String createBlackBackgroundVideo(Double duration, String size, String outputVideoPath) {
         try {
-            String outputPath = "black_video" + ".mp4";
+            String outputPath = "black_video" + outputVideoPath;
             runFFmpegCommand(Arrays.asList(
                     "ffmpeg", "-y",
-                    "-f", "lavfi", "-t", String.valueOf(duration), "-i", "color=c=black:s=1280x720",
+                    "-f", "lavfi", "-t", String.valueOf(duration), "-i", "color=c=black:s=" + size,
                     "-f", "lavfi", "-t", String.valueOf(duration), "-i", "anullsrc=r=44100:cl=stereo",
                     "-c:v", "libx264", "-c:a", "aac",
                     outputPath
@@ -318,13 +306,13 @@ public class FFmpegServiceImpl implements FFmpegService {
         }
     }
 
-    private String addBackground (String backgroundPath, String videoPath, String outputPath) {
+    private String addBackground (String backgroundPath, String videoPath,String size, String outputPath) {
         try{
             runFFmpegCommand(Arrays.asList(
                     "ffmpeg", "-y",
                     "-i", backgroundPath,
                     "-i", videoPath,
-                    "-filter_complex", "[0:v]scale=1280:720[bg];[1:v]scale=1280:720[fg];[fg][bg]overlay=(W-w)/2:(H-h)/2[out]",
+                    "-filter_complex", "[0:v]scale=" + size + "[bg];[1:v]scale=" + size +"[fg];[fg][bg]overlay=(W-w)/2:(H-h)/2[out]",
                     "-map", "[out]", "-map", "1:a",
                     "-c:v", "libx264", "-crf", "18", "-preset", "ultrafast",
                     "-c:a", "aac",

@@ -57,6 +57,8 @@ public class ProjectServiceImpl implements ProjectService {
         Project project = getProjectById(updateProjectRequest.getId());
         project.setName(updateProjectRequest.getName());
         project.setUploadTime(updateProjectRequest.getUploadTime());
+        project.setAsset(updateProjectRequest.getAsset());
+        project.setSize(updateProjectRequest.getSize());
         project.setLength(updateProjectRequest.getLength());
         for (VideoRequest video : updateProjectRequest.getVideos()) {
             videoService.updateVideo(video);

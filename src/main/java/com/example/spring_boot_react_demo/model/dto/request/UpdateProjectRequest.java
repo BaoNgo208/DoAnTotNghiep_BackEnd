@@ -13,9 +13,10 @@ import java.util.List;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class UpdateProjectRequest {
     Long id;
-    String name ;
-    LocalDateTime uploadTime ;
-    Double length ;
+    String name;
+    LocalDateTime uploadTime;
+    Double length;
+    String size;
     String asset;
     List<VideoRequest> videos;
     Background background;
