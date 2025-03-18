@@ -20,8 +20,9 @@ import static com.example.spring_boot_react_demo.util.ConvertUtils.*;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.TimeUnit;
-
+import static com.example.spring_boot_react_demo.util.FileUtil.*;
 import static com.example.spring_boot_react_demo.util.Constants.MEDIA_TYPE_AUDIO;
+import static com.example.spring_boot_react_demo.util.ConvertUtils.convertMultipartFileToFile;
 
 @Service
 @RequiredArgsConstructor
@@ -50,7 +51,7 @@ public class WhisperServiceImpl implements WhisperService {
                 throw new IOException("Unexpected response from OpenAI: " + response);
             }
 
-            return generateSrtFile(response.body().string());
+            return generateAssFile(response.body().string());
         } catch (IOException e) {
             log.error("Error transcribing audio: {}", audioFile.getOriginalFilename(), e);
             return null;
@@ -71,39 +72,41 @@ public class WhisperServiceImpl implements WhisperService {
                 .build();
     }
 
-    private MultipartFile generateSrtFile(String responseBody) throws IOException {
+    private MultipartFile generateAssFile(String responseBody) throws IOException {
         JSONArray segments = new JSONObject(responseBody).getJSONArray("segments");
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         try (Writer writer = new OutputStreamWriter(outputStream, StandardCharsets.UTF_8)) {
+
+            writer.write(readHeaderFromFile());
+
             for (int i = 0; i < segments.length(); i++) {
                 JSONObject segment = segments.getJSONObject(i);
-                writer.write(String.format("%d\n%s --> %s\n%s\n\n",
-                        i + 1,
-                        convertSecondsToSrtFormat(segment.getDouble("start")),
-                        convertSecondsToSrtFormat(segment.getDouble("end")),
+                writer.write(String.format("Dialogue: 0,%s,%s,Default,,0,0,0,,%s \n",
+                        convertSecondsToAssFormat(segment.getDouble("start")),
+                        convertSecondsToAssFormat(segment.getDouble("end")),
                         segment.getString("text")));
             }
         }
-        return new MockMultipartFile("output.srt", "output.srt", "text/plain", outputStream.toByteArray());
+        return new MockMultipartFile("output.ass", "output.ass", "text/plain", outputStream.toByteArray());
     }
 
-    private String convertSecondsToSrtFormat(double seconds) {
+    private String convertSecondsToAssFormat(double seconds) {
         int hours = (int) (seconds / 3600);
         int minutes = (int) ((seconds % 3600) / 60);
         int secs = (int) (seconds % 60);
-        int millis = (int) ((seconds - (int) seconds) * 1000);
-        return String.format("%02d:%02d:%02d,%03d", hours, minutes, secs, millis);
+        int centisecs = (int) ((seconds - (int) seconds) * 100);
+        return String.format("%01d:%02d:%02d.%02d", hours, minutes, secs, centisecs);
     }
 
     @Override
     public String processVideo(MultipartFile videoFile, Long projectId) {
         try {
-            MultipartFile srtFile = transcribeAudio(videoFile);
-            if (srtFile == null) {
+            MultipartFile assFile = transcribeAudio(videoFile);
+            if (assFile == null) {
                 throw new IOException("Failed to generate subtitles for: " + videoFile.getOriginalFilename());
             }
-            saveSrtContent(srtFile,projectId);
-            MultipartFile processedVideo = ffmpegService.addSrtToVideo(videoFile, convertMultipartFileToFile(srtFile, "process.srt"));
+            saveAssContent(assFile,projectId);
+            MultipartFile processedVideo = ffmpegService.addAssToVideo(videoFile, convertMultipartFileToFile(assFile, "process.srt"));
             if (processedVideo == null) {
                 throw new IOException("Failed to generate video with subtitles for: " + videoFile.getOriginalFilename());
             }
@@ -115,13 +118,13 @@ public class WhisperServiceImpl implements WhisperService {
         }
     }
 
-    private void saveSrtContent(MultipartFile srtFile, Long projectId) throws IOException {
+    private void saveAssContent(MultipartFile assFile, Long projectId) throws IOException {
         Project project = projectRepository.findById(projectId)
                 .orElseThrow(() -> new IllegalArgumentException("Project not found with ID: " + projectId));
 
-        String srtContent = new String(srtFile.getBytes(), StandardCharsets.UTF_8);
+        String assContent = new String(assFile.getBytes(), StandardCharsets.UTF_8);
         Lyric lyric = new Lyric();
-        lyric.setText(srtContent);
+        lyric.setText(assContent);
         lyric.setProject(project);
         lyricRepository.save(lyric);
     }

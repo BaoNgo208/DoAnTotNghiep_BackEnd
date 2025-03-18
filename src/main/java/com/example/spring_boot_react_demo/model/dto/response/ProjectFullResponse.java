@@ -21,5 +21,5 @@ public class ProjectFullResponse {
     String asset;
     List<VideoResponse> videos;
     Background background;
-    Long lyricId;
+    Lyric lyric;
 }

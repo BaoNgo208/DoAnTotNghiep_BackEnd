@@ -190,15 +190,16 @@ public class FFmpegServiceImpl implements FFmpegService {
             return "Merge failed: " + e.getMessage();
         }
     }
-
     @Override
-    public MultipartFile addSrtToVideo(MultipartFile videoFile, File srtFile) {
+    public MultipartFile addAssToVideo(MultipartFile videoFile, File assFile) {
         try {
             File tempVideoFile = convertMultipartFileToFile(videoFile, "temp_video.mp4");
             File outputFile = new File("output.mp4");
-            addSrtToVideo(tempVideoFile.getAbsolutePath(),
-                        srtFile,
-                        outputFile.getAbsolutePath());
+
+            addAssToVideo(tempVideoFile.getAbsolutePath(),
+                    assFile,
+                    outputFile.getAbsolutePath());
+
             MultipartFile mergedFile = convertFileToMultipartFile(outputFile);
             deleteFileIfExists(outputFile.getAbsolutePath());
             return mergedFile;
@@ -225,8 +226,8 @@ public class FFmpegServiceImpl implements FFmpegService {
         }
         if(project.getLyric() != null) {
             String tempOutput =  "output_with_lyric_" + outputVideoPath;
-            File lyricFile = createSrcFile(project.getLyric().getText());
-            addSrtToVideo(newOutput,
+            File lyricFile = createAssFile(project.getLyric().getText());
+            addAssToVideo(newOutput,
                     lyricFile,
                     tempOutput);
             newOutput = tempOutput;
@@ -242,9 +243,9 @@ public class FFmpegServiceImpl implements FFmpegService {
         return project.getAsset();
     }
 
-    private void addSrtToVideo(String videoPath, File srtFile, String outputPath) {
+    private void addAssToVideo(String videoPath, File assFile, String outputPath) {
         try {
-            String escapedSubtitlePath = srtFile.getAbsolutePath().replace("\\", "\\\\").replace(":", "\\:");
+            String escapedSubtitlePath = assFile.getAbsolutePath().replace("\\", "\\\\").replace(":", "\\:");
             runFFmpegCommand(Arrays.asList(
                     "ffmpeg", "-y",
                     "-i", videoPath,
@@ -253,7 +254,7 @@ public class FFmpegServiceImpl implements FFmpegService {
                     "-c:a", "copy", outputPath
             ));
             deleteFileIfExists(videoPath);
-            deleteFileIfExists(srtFile.getAbsolutePath());
+            deleteFileIfExists(assFile.getAbsolutePath());
         } catch (IOException | InterruptedException e) {
             throw new AppException(ErrorCode.FFMPEG_CREATE_VIDEO_FAIL);
         }

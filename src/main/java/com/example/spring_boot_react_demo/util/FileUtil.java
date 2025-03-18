@@ -1,13 +1,15 @@
 package com.example.spring_boot_react_demo.util;
 import com.example.spring_boot_react_demo.model.MediaType;
-import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.web.multipart.MultipartFile;
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
 
 public class FileUtil {
+    private static final String HEADER_FILE_PATH = "src/main/java/com/example/spring_boot_react_demo/util/ass_header.txt";
 
     private static final List<String> IMAGE_TYPES = Arrays.asList(
             "image/png", "image/jpeg", "image/jpg", "image/gif", "image/webp"
@@ -45,8 +47,8 @@ public class FileUtil {
         }
     }
 
-    public static File createSrcFile(String text) {
-        File file = new File("lyrics.srt");
+    public static File createAssFile(String text) {
+        File file = new File("lyrics.ass");
 
         try (FileWriter writer = new FileWriter(file)) {
             writer.write(text);
@@ -55,13 +57,7 @@ public class FileUtil {
         }
         return file;
     }
-    public static MultipartFile createSrtMultipartFile(String text) {
-        File file = createSrcFile(text);
-        try {
-            byte[] content = Files.readAllBytes(file.toPath());
-            return new MockMultipartFile("lyrics.srt", "lyrics.srt", "text/plain", content);
-        } catch (IOException e) {
-            throw new RuntimeException("Error converting file to MultipartFile: " + e.getMessage());
-        }
+    public static String readHeaderFromFile() throws IOException {
+        return Files.readString(Paths.get(HEADER_FILE_PATH), StandardCharsets.UTF_8);
     }
 }

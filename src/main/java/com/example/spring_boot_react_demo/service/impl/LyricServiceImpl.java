@@ -13,9 +13,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+import static com.example.spring_boot_react_demo.util.FileUtil.*;
 import java.util.List;
 import java.util.Optional;
-import static com.example.spring_boot_react_demo.util.FileUtil.*;
 
 @Service
 @RequiredArgsConstructor
@@ -49,13 +49,13 @@ public class LyricServiceImpl implements LyricService {
                 .orElseThrow(() -> new RuntimeException("Lyric not found for projectId: " + projectId));
         lyric.setText(newLyric.trim());
         lyricRepository.save(lyric);
-        return ffmpegService.addSrtToVideo(file, createSrcFile(lyric.getText()));
+        return ffmpegService.addAssToVideo(file, createAssFile(lyric.getText()));
     }
 
     @Override
     public MultipartFile addLyricToVideo(MultipartFile videoFile, Long projectId) {
         Lyric lyric = lyricRepository.findByProjectId(projectId)
                 .orElseThrow(() -> new AppException(ErrorCode.PROJECT_HAS_NO_LYRICS));
-        return ffmpegService.addSrtToVideo(videoFile, createSrcFile(lyric.getText()));
+        return ffmpegService.addAssToVideo(videoFile, createAssFile(lyric.getText()));
     }
 }
