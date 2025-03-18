@@ -11,6 +11,8 @@ import lombok.experimental.FieldDefaults;
 @AllArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
 @Entity
+@Getter
+@Setter
 @Table(name = "lyric")
 public class Lyric {
     @Id
@@ -25,4 +27,10 @@ public class Lyric {
     @JoinColumn(name = "project_id", referencedColumnName = "project_id", nullable = false)
     @JsonIgnore
     Project project;
+
+    @Column(name = "is_lyric_hidden", nullable = false)
+    boolean isLyricHidden;
+
+    @Column(name = "original_lyric_text", nullable = true)
+    private String originalText;
 }

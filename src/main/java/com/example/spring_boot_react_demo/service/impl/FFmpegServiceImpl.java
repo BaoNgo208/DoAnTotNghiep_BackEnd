@@ -162,6 +162,7 @@ public class FFmpegServiceImpl implements FFmpegService {
             return "Error while merging media.";
         }
     }
+
     @Override
     public String mixAudioVideo(String videoFile, String audioFile, String outputFile) {
         try {
@@ -190,6 +191,7 @@ public class FFmpegServiceImpl implements FFmpegService {
             return "Merge failed: " + e.getMessage();
         }
     }
+
     @Override
     public MultipartFile addAssToVideo(MultipartFile videoFile, File assFile) {
         try {
