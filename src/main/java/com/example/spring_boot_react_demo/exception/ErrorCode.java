@@ -19,6 +19,7 @@ public enum ErrorCode {
     DELETE_FILE_FAIL("Cannot delete file", HttpStatus.INTERNAL_SERVER_ERROR),
     CREATE_FILE_FAIL("Cannot create file", HttpStatus.INTERNAL_SERVER_ERROR),
     FILE_NOT_FOUND("File not found", HttpStatus.NOT_FOUND),
+    PROJECT_HAS_NO_LYRICS("Project has no lyrics", HttpStatus.NOT_FOUND)
     ;
 
     private final String message;

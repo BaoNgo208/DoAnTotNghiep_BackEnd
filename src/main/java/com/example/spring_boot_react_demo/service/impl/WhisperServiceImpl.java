@@ -16,7 +16,7 @@ import org.cloudinary.json.JSONObject;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
-
+import static com.example.spring_boot_react_demo.util.ConvertUtils.*;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.TimeUnit;
@@ -103,7 +103,7 @@ public class WhisperServiceImpl implements WhisperService {
                 throw new IOException("Failed to generate subtitles for: " + videoFile.getOriginalFilename());
             }
             saveSrtContent(srtFile,projectId);
-            MultipartFile processedVideo = ffmpegService.addSrtToVideo(videoFile, srtFile);
+            MultipartFile processedVideo = ffmpegService.addSrtToVideo(videoFile, convertMultipartFileToFile(srtFile, "process.srt"));
             if (processedVideo == null) {
                 throw new IOException("Failed to generate video with subtitles for: " + videoFile.getOriginalFilename());
             }

@@ -1,7 +1,9 @@
 package com.example.spring_boot_react_demo.util;
 import com.example.spring_boot_react_demo.model.MediaType;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.web.multipart.MultipartFile;
 import java.io.*;
+import java.nio.file.Files;
 import java.util.Arrays;
 import java.util.List;
 
@@ -52,5 +54,14 @@ public class FileUtil {
             throw new RuntimeException(e);
         }
         return file;
+    }
+    public static MultipartFile createSrtMultipartFile(String text) {
+        File file = createSrcFile(text);
+        try {
+            byte[] content = Files.readAllBytes(file.toPath());
+            return new MockMultipartFile("lyrics.srt", "lyrics.srt", "text/plain", content);
+        } catch (IOException e) {
+            throw new RuntimeException("Error converting file to MultipartFile: " + e.getMessage());
+        }
     }
 }

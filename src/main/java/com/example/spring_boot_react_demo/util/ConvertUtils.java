@@ -4,6 +4,7 @@ import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.web.multipart.MultipartFile;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 
 public class ConvertUtils {
@@ -15,7 +16,13 @@ public class ConvertUtils {
                 new FileInputStream(file)
         );
     }
-    public static MultipartFile convertByteArrayToMultipartFile(byte[] fileData, String fileName) {
-        return new MockMultipartFile(fileName, fileName, "video/mp4", fileData);
+    public static File convertMultipartFileToFile(MultipartFile multipartFile, String path) {
+        File file = new File(path);
+        try (FileOutputStream outputStream = new FileOutputStream(file)) {
+            outputStream.write(multipartFile.getBytes());
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to convert MultipartFile to File", e);
+        }
+        return file;
     }
 }

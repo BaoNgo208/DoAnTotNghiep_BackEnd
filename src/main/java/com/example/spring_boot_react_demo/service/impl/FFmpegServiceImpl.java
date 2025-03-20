@@ -192,33 +192,17 @@ public class FFmpegServiceImpl implements FFmpegService {
     }
 
     @Override
-    public MultipartFile addSrtToVideo(MultipartFile videoFile, MultipartFile srtFile) {
+    public MultipartFile addSrtToVideo(MultipartFile videoFile, File srtFile) {
         try {
-            File tempVideoFile = File.createTempFile("temp_video_", ".mp4");
-            File tempSubtitleFile = File.createTempFile("temp_subtitle_", ".srt");
-            File outputFile = File.createTempFile("output_burned_", ".mp4");
-
-            videoFile.transferTo(tempVideoFile);
-            srtFile.transferTo(tempSubtitleFile);
-
-            String subtitlePath = tempSubtitleFile.getAbsolutePath();
-            String escapedSubtitlePath = subtitlePath.replace("\\", "\\\\").replace(":", "\\:");
-            List<String> command = Arrays.asList(
-                    "ffmpeg", "-y",
-                    "-i", tempVideoFile.getAbsolutePath(),
-                    "-vf", "subtitles='" + escapedSubtitlePath + "'",
-                    "-c:v", "libx264", "-crf", "23", "-preset", "fast",
-                    "-c:a", "copy", outputFile.getAbsolutePath()
-            );
-            runFFmpegCommand(command);
+            File tempVideoFile = convertMultipartFileToFile(videoFile, "temp_video.mp4");
+            File outputFile = new File("output.mp4");
+            addSrtToVideo(tempVideoFile.getAbsolutePath(),
+                        srtFile,
+                        outputFile.getAbsolutePath());
             MultipartFile mergedFile = convertFileToMultipartFile(outputFile);
-            tempVideoFile.delete();
-            tempSubtitleFile.delete();
-            outputFile.delete();
-
+            deleteFileIfExists(outputFile.getAbsolutePath());
             return mergedFile;
-
-        } catch (IOException | InterruptedException e) {
+        } catch (IOException  e) {
             e.printStackTrace();
             return null;
         }
@@ -261,7 +245,6 @@ public class FFmpegServiceImpl implements FFmpegService {
     private void addSrtToVideo(String videoPath, File srtFile, String outputPath) {
         try {
             String escapedSubtitlePath = srtFile.getAbsolutePath().replace("\\", "\\\\").replace(":", "\\:");
-            log.info("escapedSubtitlePath"+ escapedSubtitlePath);
             runFFmpegCommand(Arrays.asList(
                     "ffmpeg", "-y",
                     "-i", videoPath,
@@ -329,7 +312,7 @@ public class FFmpegServiceImpl implements FFmpegService {
         }
     }
 
-    private void addBackground (String backgroundPath, String videoPath,String size, String outputPath) {
+    private void addBackground (String backgroundPath, String videoPath, String size, String outputPath) {
         try{
             runFFmpegCommand(Arrays.asList(
                     "ffmpeg", "-y",

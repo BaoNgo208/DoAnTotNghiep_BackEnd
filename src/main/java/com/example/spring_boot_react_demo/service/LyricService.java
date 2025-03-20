@@ -9,5 +9,6 @@ import java.util.Optional;
 public interface LyricService {
     List<String> getLyricsByProjectId(Long projectId);
     Optional<LyricResponse> getLyricById(Long lyricId);
-    String updateLyric(Long lyricId, String newText, MultipartFile file);
+    MultipartFile updateLyric(Long lyricId, String newLyric, MultipartFile file);
+    MultipartFile addLyricToVideo(MultipartFile videoFile, Long projectId);
 }
