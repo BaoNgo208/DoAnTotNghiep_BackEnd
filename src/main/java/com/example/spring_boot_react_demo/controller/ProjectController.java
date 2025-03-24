@@ -10,8 +10,13 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.Resource;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import static com.example.spring_boot_react_demo.util.FileUtil.*;
 
 @RestController
 @RequiredArgsConstructor
@@ -47,9 +52,16 @@ public class ProjectController {
                 .build();
     }
     @GetMapping("/exportProject")
-    public ApiResponse<String> exportProject(@RequestParam Long projectId, @RequestParam String outputVideoPath) {
-        return ApiResponse.<String>builder()
-                .result(projectService.exportProject(projectId, outputVideoPath))
-                .build();
+    public ResponseEntity<Resource> exportProject(@RequestParam Long projectId,
+                                                  @RequestParam String outputVideoPath) {
+        Resource resource = projectService.exportProject(projectId, outputVideoPath);
+        try {
+            return ResponseEntity.ok()
+                    .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + resource.getFilename() + "\"")
+                    .body(resource);
+        } finally {
+            deleteFileIfExists(resource.getFilename());
+        }
     }
 }

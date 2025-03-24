@@ -2,8 +2,6 @@ package com.example.spring_boot_react_demo.controller;
 
 import com.example.spring_boot_react_demo.model.dto.response.ApiResponse;
 import com.example.spring_boot_react_demo.model.dto.response.LyricResponse;
-import com.example.spring_boot_react_demo.model.dto.response.ApiResponse;
-import com.example.spring_boot_react_demo.model.entity.Lyric;
 import com.example.spring_boot_react_demo.service.LyricService;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,11 +11,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.util.Base64;
-
-import java.io.IOException;
-import java.util.Base64;
 import java.util.List;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/lyrics")

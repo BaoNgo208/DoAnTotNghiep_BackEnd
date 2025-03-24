@@ -2,25 +2,16 @@ package com.example.spring_boot_react_demo.service.impl;
 
 import com.example.spring_boot_react_demo.exception.AppException;
 import com.example.spring_boot_react_demo.exception.ErrorCode;
-import com.example.spring_boot_react_demo.model.MediaType;
-import com.example.spring_boot_react_demo.model.entity.Project;
-import com.example.spring_boot_react_demo.model.entity.Video;
-import com.example.spring_boot_react_demo.repository.ProjectRepo;
-import com.example.spring_boot_react_demo.service.CloudinaryService;
 import com.example.spring_boot_react_demo.service.FFmpegService;
-import static com.example.spring_boot_react_demo.util.Constants.*;
 import static com.example.spring_boot_react_demo.util.ConvertUtils.*;
 import static  com.example.spring_boot_react_demo.util.FileUtil.*;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import java.io.*;
-import java.nio.file.*;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -29,167 +20,20 @@ import java.util.List;
 @RequiredArgsConstructor
 @FieldDefaults(level =  AccessLevel.PRIVATE, makeFinal = true)
 public class FFmpegServiceImpl implements FFmpegService {
-    CloudinaryService cloudinaryService;
-    ProjectRepo projectRepo;
 
     @Override
-    public String cutAudio(MultipartFile file, String startTime, String endTime) {
-        try{
-            File tempFile = File.createTempFile("temp_audio_",".mp3");
-            file.transferTo(tempFile);
-
-            String outputFilePath = "output_" + tempFile.getName();
-            String ffmpegCommand = String.format(
-                    "ffmpeg -i %s -ss %s -to %s -c copy %s",
-                    tempFile.getAbsolutePath(), startTime, endTime, outputFilePath
-            );
-
-            ProcessBuilder processBuilder = new ProcessBuilder(ffmpegCommand.split(" "));
-            processBuilder.inheritIO();
-            Process process = processBuilder.start();
-            process.waitFor();
-
-            return "Audio file cut successfully. Output file: " + outputFilePath;
-        }catch (IOException | InterruptedException e)  {
-            e.printStackTrace();
-            return "Error while cutting audio.";
-        }
-    }
-    @Override
-    public String mergeAudio(MultipartFile file1, MultipartFile file2) {
+    public String convertVideo(String inputVideoPath, String outputFileExtension) {
+        String outputVideoPath = "output" + outputFileExtension;
         try {
-            File tempFile1 = File.createTempFile("temp_audio_1_", ".mp3");
-            File tempFile2 = File.createTempFile("temp_audio_2_", ".mp3");
-            file1.transferTo(tempFile1);
-            file2.transferTo(tempFile2);
-
-            File listFile = File.createTempFile("fileList", ".txt");
-            String listContent = "file '" + tempFile1.getAbsolutePath() + "'\n" +
-                    "file '" + tempFile2.getAbsolutePath() + "'\n";
-            java.nio.file.Files.write(listFile.toPath(), listContent.getBytes());
-
-            String outputFilePath = "output_merged.mp3";
-            String ffmpegCommand = String.format(
-                    "ffmpeg -f concat -safe 0 -i %s -c copy %s",
-                    listFile.getAbsolutePath(), outputFilePath
-            );
-
-            ProcessBuilder processBuilder = new ProcessBuilder(ffmpegCommand.split(" "));
-            processBuilder.inheritIO();
-            Process process = processBuilder.start();
-            process.waitFor();
-
-            return "Audio files merged successfully. Output file: " + outputFilePath;
-        } catch (IOException | InterruptedException e) {
+            runFFmpegCommand(Arrays.asList(
+                    "ffmpeg", "-y",
+                    "-i", inputVideoPath,
+                    outputVideoPath
+            ));
+        }catch (IOException | InterruptedException e){
             e.printStackTrace();
-            return "Error while merging audio.";
         }
-    }
-
-    @Override
-    public String cutMedia(MultipartFile file, String startTime, String endTime,String fileExtension) {
-        try {
-            File tempFile = File.createTempFile("temp_media_", fileExtension);
-            file.transferTo(tempFile);
-
-            String outputFilePath = "output_" + tempFile.getName();
-            String ffmpegCommand = String.format(
-                    "ffmpeg -i %s -ss %s -to %s -c copy %s",
-                    tempFile.getAbsolutePath(), startTime, endTime, outputFilePath
-            );
-
-            ProcessBuilder processBuilder = new ProcessBuilder(ffmpegCommand.split(" "));
-            processBuilder.inheritIO();
-            Process process = processBuilder.start();
-            process.waitFor();
-
-            return "Media file cut successfully. Output file: " + outputFilePath;
-        } catch (IOException | InterruptedException e) {
-            e.printStackTrace();
-            return "Error while cutting media.";
-        }
-    }
-
-    @Override
-    public String mergeMedia(List<MultipartFile> files, String fileExtension) {
-        try {
-            if (files.isEmpty()) {
-                return "No files provided for merging.";
-            }
-            if (!fileExtension.equals(".mp3") && !fileExtension.equals(".mp4")) {
-                return "Unsupported file format. Only .mp3 and .mp4 are allowed.";
-            }
-            String resourceType = fileExtension.equals(".mp3") ? "audio" : "video";
-            File listFile = File.createTempFile("fileList", ".txt");
-            StringBuilder listContent = new StringBuilder();
-            List<File> tempFiles = new ArrayList<>();
-
-            for (MultipartFile file : files) {
-                File tempFile = File.createTempFile("temp_media_", fileExtension);
-                file.transferTo(tempFile);
-                tempFiles.add(tempFile);
-                listContent.append("file '").append(tempFile.getAbsolutePath()).append("'\n");
-            }
-
-            Files.write(listFile.toPath(), listContent.toString().getBytes());
-            File outputFile = File.createTempFile("merged_", fileExtension);
-            String ffmpegCommand = String.format(
-                    "ffmpeg -y -f concat -safe 0 -i %s -c copy %s",
-                    listFile.getAbsolutePath(), outputFile.getAbsolutePath()
-            );
-
-            ProcessBuilder processBuilder = new ProcessBuilder(ffmpegCommand.split(" "));
-            processBuilder.inheritIO();
-            Process process = processBuilder.start();
-            process.waitFor();
-            MultipartFile multipartOutputFile = new MockMultipartFile(
-                    outputFile.getName(),
-                    outputFile.getName(),
-                    "application/octet-stream",
-                    Files.readAllBytes(outputFile.toPath())
-            );
-
-            String cloudinaryUrl = cloudinaryService.uploadFile(multipartOutputFile,resourceType);
-            listFile.delete();
-            for (File tempFile : tempFiles) {
-                tempFile.delete();
-            }
-            outputFile.delete();
-
-            return cloudinaryUrl != null ? cloudinaryUrl : "Error uploading merged file to Cloudinary.";
-        } catch (IOException | InterruptedException e) {
-            e.printStackTrace();
-            return "Error while merging media.";
-        }
-    }
-
-    @Override
-    public String mixAudioVideo(String videoFile, String audioFile, String outputFile) {
-        try {
-            ProcessBuilder processBuilder = new ProcessBuilder(
-                    "ffmpeg",
-                    "-i", "\"" + videoFile + "\"",
-                    "-i", "\"" + audioFile + "\"",
-                    "-c:v", "copy",
-                    "-c:a", "aac",
-                    "-map", "0:v:0",
-                    "-map", "1:a:0",
-                    outputFile
-            );
-            processBuilder.redirectErrorStream(true);
-            Process process = processBuilder.start();
-            StringBuilder processOutput = new StringBuilder();
-            try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    processOutput.append(line).append("\n");
-                }
-            }
-            return "Merge successful, output file: " + outputFile;
-        } catch (Exception e) {
-            e.printStackTrace();
-            return "Merge failed: " + e.getMessage();
-        }
+        return outputVideoPath;
     }
 
     @Override
@@ -211,40 +55,6 @@ public class FFmpegServiceImpl implements FFmpegService {
         }
     }
 
-    @Override
-    public String createFullVideo(Project project, String outputVideoPath) {
-        String size = project.getSize() == null ? "1280x720" : project.getSize();
-
-        String blackVideo = createBlackBackgroundVideo(project.getLength(), size);
-        String mergeVideo = processVideos(project, blackVideo, outputVideoPath);
-        String newOutput = mergeVideo;
-        if (project.getBackground() != null) {
-            String tempOutput =  "output_with_bg_" + outputVideoPath;
-            addBackground(project.getBackground().getAsset(),
-                    mergeVideo,
-                    size,
-                    tempOutput);
-            newOutput = tempOutput;
-        }
-        if(project.getLyric() != null) {
-            String tempOutput =  "output_with_lyric_" + outputVideoPath;
-            File lyricFile = createAssFile(project.getLyric().getText());
-            addAssToVideo(newOutput,
-                    lyricFile,
-                    tempOutput);
-            newOutput = tempOutput;
-        }
-        File outputFile = new File(newOutput);
-        if (outputFile.exists()) {
-            project.setAsset(cloudinaryService.uploadFile(outputFile, MediaType.VIDEO.getname()));
-            projectRepo.save(project);
-            deleteFileIfExists(newOutput);
-        } else {
-            throw new AppException(ErrorCode.FILE_NOT_FOUND);
-        }
-        return project.getAsset();
-    }
-
     private void addAssToVideo(String videoPath, File assFile, String outputPath) {
         try {
             String escapedSubtitlePath = assFile.getAbsolutePath().replace("\\", "\\\\").replace(":", "\\:");
@@ -262,77 +72,6 @@ public class FFmpegServiceImpl implements FFmpegService {
         }
     }
 
-    private String processVideos(Project project, String videoPath, String outputVideoPath) {
-        int index = ONE;
-        for (Video video : project.getVideo()) {
-            String newOutput = "output_" + index++ + outputVideoPath;
-            videoPath = overlayVideo(videoPath,
-                    video.getAsset(),
-                    video.getStartTime(),
-                    video.getEndTime(),
-                    newOutput);
-        }
-        return videoPath;
-    }
-
-    private String overlayVideo(String backgroundVideoPath, String overlayVideoPath, double startTime, double endTime, String outputPath) {
-        try {
-            runFFmpegCommand(Arrays.asList(
-                    "ffmpeg", "-y",
-                    "-i", backgroundVideoPath,
-                    "-i", overlayVideoPath,
-                    "-filter_complex",
-                    "[1:v]setpts=PTS-STARTPTS+" + startTime + "/TB[v1]; " +
-                            "[1:a]adelay=" + (int)(startTime * 1000) + "|" + (int)(startTime * 1000) + "[a1]; " +
-                            "[0:a][a1]amix=inputs=2:duration=first[aout]; " +
-                            "[0:v][v1]overlay=W/2-w/2:H/2-h/2:enable='between(t," + startTime + "," + endTime + ")'[v]",
-                    "-map", "[v]",
-                    "-map", "[aout]",
-                    "-c:v", "libx264",
-                    "-c:a", "aac", "-b:a", "192k",
-                    outputPath
-            ));
-            deleteFileIfExists(backgroundVideoPath);
-            return outputPath;
-        } catch (IOException | InterruptedException e) {
-            throw new AppException(ErrorCode.FFMPEG_OVERLAY_VIDEO_FAIL);
-        }
-    }
-
-    private String createBlackBackgroundVideo(Double duration, String size) {
-        try {
-            String outputPath = "black_video.mp4";
-            runFFmpegCommand(Arrays.asList(
-                    "ffmpeg", "-y",
-                    "-f", "lavfi", "-t", String.valueOf(duration), "-i", "color=c=black:s=" + size,
-                    "-f", "lavfi", "-t", String.valueOf(duration), "-i", "anullsrc=r=44100:cl=stereo",
-                    "-c:v", "libx264", "-c:a", "aac",
-                    outputPath
-            ));
-            return outputPath;
-        } catch (IOException | InterruptedException e) {
-            throw new AppException(ErrorCode.FFMPEG_CREATE_VIDEO_FAIL);
-        }
-    }
-
-    private void addBackground (String backgroundPath, String videoPath, String size, String outputPath) {
-        try{
-            runFFmpegCommand(Arrays.asList(
-                    "ffmpeg", "-y",
-                    "-i", backgroundPath,
-                    "-i", videoPath,
-                    "-filter_complex", "[0:v]scale=" + size + "[bg];[1:v]scale=" + size +"[fg];[fg][bg]overlay=(W-w)/2:(H-h)/2[out]",
-                    "-map", "[out]", "-map", "1:a",
-                    "-c:v", "libx264", "-crf", "18", "-preset", "ultrafast",
-                    "-c:a", "aac",
-                    outputPath
-            ));
-        }catch (Exception e){
-            throw new AppException(ErrorCode.FFMPEG_CREATE_VIDEO_FAIL);
-        }
-        deleteFileIfExists(videoPath);
-    }
-
     private void runFFmpegCommand(List<String> command) throws IOException, InterruptedException {
         ProcessBuilder processBuilder = new ProcessBuilder(command);
         processBuilder.redirectErrorStream(true);
@@ -342,16 +81,6 @@ public class FFmpegServiceImpl implements FFmpegService {
 
         if (exitCode != 0) {
             throw new RuntimeException("FFmpeg execution failed with exit code: " + exitCode);
-        }
-    }
-    private void deleteFileIfExists(String path) {
-        File file = new File(path);
-        if (file.exists()) {
-            if (file.delete()) {
-                log.info("File deleted successfully.");
-            } else {
-                log.info("Failed to delete the file.");
-            }
         }
     }
 }

@@ -6,5 +6,4 @@ import java.io.File;
 public interface CloudinaryService {
     void deleteFile(String publicId, String resourceType);
     String uploadFile(MultipartFile file, String resourceType);
-    String uploadFile(File file, String resourceType);
 }

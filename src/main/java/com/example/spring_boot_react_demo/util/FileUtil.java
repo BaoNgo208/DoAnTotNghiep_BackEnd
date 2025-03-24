@@ -1,5 +1,6 @@
 package com.example.spring_boot_react_demo.util;
 import com.example.spring_boot_react_demo.model.MediaType;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.multipart.MultipartFile;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
@@ -7,9 +8,10 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
+import static com.example.spring_boot_react_demo.util.Constants.HEADER_FILE_PATH;
 
+@Slf4j
 public class FileUtil {
-    private static final String HEADER_FILE_PATH = "src/main/java/com/example/spring_boot_react_demo/util/ass_header.txt";
 
     private static final List<String> IMAGE_TYPES = Arrays.asList(
             "image/png", "image/jpeg", "image/jpg", "image/gif", "image/webp"
@@ -57,7 +59,19 @@ public class FileUtil {
         }
         return file;
     }
+
     public static String readHeaderFromFile() throws IOException {
         return Files.readString(Paths.get(HEADER_FILE_PATH), StandardCharsets.UTF_8);
+    }
+
+    public static void deleteFileIfExists(String filePath) {
+        new Thread(() -> {
+            try {
+                Thread.sleep(5000);
+                Files.deleteIfExists(Paths.get(filePath));
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }).start();
     }
 }

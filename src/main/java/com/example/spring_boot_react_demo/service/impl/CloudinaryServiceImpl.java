@@ -4,11 +4,9 @@ import com.cloudinary.Cloudinary;
 import com.example.spring_boot_react_demo.model.MediaType;
 import com.example.spring_boot_react_demo.service.CloudinaryService;
 import static com.example.spring_boot_react_demo.util.Constants.*;
-import static com.example.spring_boot_react_demo.util.ConvertUtils.convertFileToMultipartFile;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
-import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
@@ -22,7 +20,6 @@ public class CloudinaryServiceImpl implements CloudinaryService {
     public String uploadFile(MultipartFile file, String resourceType) {
         try {
             HashMap<Object, Object> options = new HashMap<>();
-            options.put("folder", "folder_1");
             options.put("resource_type", resourceType);
             Map uploadedFile = cloudinary.uploader().upload(file.getBytes(), options);
             String publicId = (String) uploadedFile.get("public_id");
@@ -38,17 +35,6 @@ public class CloudinaryServiceImpl implements CloudinaryService {
             e.printStackTrace();
             return null;
         }
-    }
-
-    @Override
-    public String uploadFile(File file, String resourceType)  {
-        MultipartFile outputFile = null;
-        try {
-            outputFile = convertFileToMultipartFile(file);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-        return  uploadFile(outputFile, "video");
     }
 
     @Override

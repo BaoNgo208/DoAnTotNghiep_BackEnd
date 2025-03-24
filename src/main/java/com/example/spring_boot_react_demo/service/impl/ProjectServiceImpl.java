@@ -18,9 +18,14 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.UrlResource;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import static com.example.spring_boot_react_demo.util.EntityMapper.*;
+import java.net.MalformedURLException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 
 @Slf4j
@@ -78,9 +83,15 @@ public class ProjectServiceImpl implements ProjectService {
     }
 
     @Override
-    public String exportProject(Long projectId, String outputVideoPath) {
+    public Resource exportProject(Long projectId, String outputVideoPath) {
         Project project = getProjectById(projectId);
-        return ffmpegService.createFullVideo(project, outputVideoPath);
+        String videoPath = ffmpegService.convertVideo(project.getAsset(), outputVideoPath);
+        Path path = Paths.get(videoPath);
+        try {
+            return new UrlResource(path.toUri());
+        } catch (MalformedURLException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private Project getProjectById(Long projectId){
