@@ -12,13 +12,19 @@ import jakarta.persistence.EntityNotFoundException;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import org.springframework.core.io.InputStreamResource;
+import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
-import static com.example.spring_boot_react_demo.util.FileUtil.*;
+import static com.example.spring_boot_react_demo.util.AssUtil.*;
 
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -93,6 +99,16 @@ public class LyricServiceImpl implements LyricService {
     public MultipartFile addLyricToVideo(MultipartFile videoFile, Long projectId) {
         Lyric lyric = lyricRepository.findByProjectId(projectId)
                 .orElseThrow(() -> new AppException(ErrorCode.PROJECT_HAS_NO_LYRICS));
+        return ffmpegService.addAssToVideo(videoFile, createAssFile(lyric.getText()));
+    }
+
+    @Override
+    public MultipartFile applyKaraEffect(MultipartFile videoFile, Long projectId) throws IOException {
+        Lyric lyric =  lyricRepository.findByProjectId(projectId)
+                .orElseThrow(() -> new RuntimeException("Lyric not found for projectId: " + projectId));
+
+        lyric.setText(modifyASSContent(lyric.getText()));
+        lyricRepository.save(lyric);
         return ffmpegService.addAssToVideo(videoFile, createAssFile(lyric.getText()));
     }
 

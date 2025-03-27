@@ -17,4 +17,12 @@ public final class Constants {
     public static final MediaType MEDIA_TYPE_AUDIO = MediaType.parse("audio/mpeg");
     public static final String OPENAI_API_KEY = "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";
     public static final String HEADER_FILE_PATH = "src/main/java/com/example/spring_boot_react_demo/util/ass_header.txt";
+    public static final String NEW_LINE = "\n";
+    public static final String COMMA = ",";
+    public static final String SPACE = " ";
+    public static final int DIALOGUE_PARTS = 10;
+    public static final int TEXT_INDEX = 9;
+    public static final String LYRICS_FILE = "lyrics.ass";
+    public static final String TEMP_VIDEO_FILE = "temp_video.mp4";
+    public static final String OUTPUT_VIDEO_FILE = "output.mp4";
 }

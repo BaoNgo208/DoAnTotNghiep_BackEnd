@@ -4,7 +4,8 @@ import com.example.spring_boot_react_demo.exception.AppException;
 import com.example.spring_boot_react_demo.exception.ErrorCode;
 import com.example.spring_boot_react_demo.service.FFmpegService;
 import static com.example.spring_boot_react_demo.util.ConvertUtils.*;
-import static  com.example.spring_boot_react_demo.util.FileUtil.*;
+import static com.example.spring_boot_react_demo.util.FileUtil.*;
+import static com.example.spring_boot_react_demo.util.Constants.*;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -39,15 +40,17 @@ public class FFmpegServiceImpl implements FFmpegService {
     @Override
     public MultipartFile addAssToVideo(MultipartFile videoFile, File assFile) {
         try {
-            File tempVideoFile = convertMultipartFileToFile(videoFile, "temp_video.mp4");
-            File outputFile = new File("output.mp4");
+            File tempVideoFile = convertMultipartFileToFile(videoFile, TEMP_VIDEO_FILE);
+            String outputPath = OUTPUT_VIDEO_FILE;
 
             addAssToVideo(tempVideoFile.getAbsolutePath(),
                     assFile,
-                    outputFile.getAbsolutePath());
+                    outputPath);
 
-            MultipartFile mergedFile = convertFileToMultipartFile(outputFile);
-            deleteFileIfExists(outputFile.getAbsolutePath());
+            MultipartFile mergedFile = convertFileToMultipartFile(new File(outputPath));
+            deleteFileIfExists(assFile.getAbsolutePath());
+            deleteFileIfExists(tempVideoFile.getAbsolutePath());
+            deleteFileIfExists(outputPath);
             return mergedFile;
         } catch (IOException  e) {
             e.printStackTrace();
@@ -65,8 +68,6 @@ public class FFmpegServiceImpl implements FFmpegService {
                     "-c:v", "libx264", "-crf", "23", "-preset", "fast",
                     "-c:a", "copy", outputPath
             ));
-            deleteFileIfExists(videoPath);
-            deleteFileIfExists(assFile.getAbsolutePath());
         } catch (IOException | InterruptedException e) {
             throw new AppException(ErrorCode.FFMPEG_CREATE_VIDEO_FAIL);
         }

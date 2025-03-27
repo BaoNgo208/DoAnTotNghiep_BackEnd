@@ -56,4 +56,12 @@ public class LyricController {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
         }
     }
+
+    @PutMapping("/applyKaraEffect")
+    public ApiResponse<?> applyKaraEffect(@RequestParam("projectId") Long projecId, @RequestParam("file") MultipartFile video) throws IOException {
+        MultipartFile resultFile = lyricService.applyKaraEffect(video, projecId);
+        return ApiResponse.builder()
+                .result(Base64.getEncoder().encodeToString(resultFile.getBytes()))
+                .build();
+    }
 }

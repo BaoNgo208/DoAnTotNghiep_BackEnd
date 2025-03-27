@@ -2,13 +2,11 @@ package com.example.spring_boot_react_demo.util;
 import com.example.spring_boot_react_demo.model.MediaType;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.multipart.MultipartFile;
-import java.io.*;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
-import static com.example.spring_boot_react_demo.util.Constants.HEADER_FILE_PATH;
 
 @Slf4j
 public class FileUtil {
@@ -49,26 +47,19 @@ public class FileUtil {
         }
     }
 
-    public static File createAssFile(String text) {
-        File file = new File("lyrics.ass");
-
-        try (FileWriter writer = new FileWriter(file)) {
-            writer.write(text);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-        return file;
-    }
-
-    public static String readHeaderFromFile() throws IOException {
-        return Files.readString(Paths.get(HEADER_FILE_PATH), StandardCharsets.UTF_8);
-    }
-
     public static void deleteFileIfExists(String filePath) {
         new Thread(() -> {
             try {
                 Thread.sleep(5000);
-                Files.deleteIfExists(Paths.get(filePath));
+                Path path = Paths.get(filePath);
+
+                if (Files.exists(path)) {
+                    if (Files.deleteIfExists(path)) {
+                        log.info("File deleted successfully: " + filePath);
+                    }
+                } else {
+                    log.info("File does not exist: " + filePath);
+                }
             } catch (Exception e) {
                 e.printStackTrace();
             }

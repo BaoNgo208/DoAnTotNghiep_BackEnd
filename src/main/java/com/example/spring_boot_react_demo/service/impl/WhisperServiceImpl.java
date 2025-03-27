@@ -16,7 +16,7 @@ import org.cloudinary.json.JSONObject;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
-import static com.example.spring_boot_react_demo.util.ConvertUtils.*;
+import static com.example.spring_boot_react_demo.util.AssUtil.*;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.TimeUnit;
