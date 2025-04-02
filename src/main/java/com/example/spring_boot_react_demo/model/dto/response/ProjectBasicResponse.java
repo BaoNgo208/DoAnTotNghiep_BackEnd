@@ -16,5 +16,6 @@ public class ProjectBasicResponse {
     LocalDateTime uploadTime ;
     Double length ;
     String asset;
+    String size;
     Background background;
 }

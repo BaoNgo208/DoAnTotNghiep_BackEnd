@@ -22,6 +22,7 @@ import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+import static com.example.spring_boot_react_demo.util.Constants.SIZE;
 import static com.example.spring_boot_react_demo.util.EntityMapper.*;
 import java.net.MalformedURLException;
 import java.nio.file.Path;
@@ -43,6 +44,7 @@ public class ProjectServiceImpl implements ProjectService {
     public ProjectBasicResponse createProject(CreateProjectRequest createProjectRequest) {
         Project project = new Project();
         project.setName(createProjectRequest.getName());
+        project.setSize(SIZE);
         projectRepo.save(project);
         return mapToProjectBasicResponse(project);
     }

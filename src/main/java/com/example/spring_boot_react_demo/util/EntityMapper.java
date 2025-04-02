@@ -15,6 +15,7 @@ public class EntityMapper {
                 project.getUploadTime(),
                 project.getLength(),
                 project.getAsset(),
+                project.getSize(),
                 project.getBackground()
         );
     }

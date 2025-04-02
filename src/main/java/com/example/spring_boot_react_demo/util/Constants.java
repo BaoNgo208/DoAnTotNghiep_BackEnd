@@ -23,6 +23,8 @@ public final class Constants {
     public static final int DIALOGUE_PARTS = 10;
     public static final int TEXT_INDEX = 9;
     public static final String LYRICS_FILE = "lyrics.ass";
-    public static final String TEMP_VIDEO_FILE = "temp_video.mp4";
-    public static final String OUTPUT_VIDEO_FILE = "output.mp4";
+    public static final String TEMP_VIDEO_FILE = "temp_video";
+    public static final String OUTPUT_VIDEO_FILE = "output";
+    public static final String MP4 = ".mp4";
+    public static final String SIZE = "640x360";
 }

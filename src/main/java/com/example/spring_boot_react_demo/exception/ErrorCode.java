@@ -9,9 +9,11 @@ public enum ErrorCode {
     INVALID_VIDEO_FORMAT("Invalid video format", HttpStatus.BAD_REQUEST),
     PROJECT_NOT_FOUND("Project not found", HttpStatus.NOT_FOUND),
     VIDEO_NOT_FOUND("video not found", HttpStatus.NOT_FOUND),
-    FFMPEG_CREATE_VIDEO_FAIL("FFmpeg processing failed  for create video", HttpStatus.BAD_REQUEST),
-    PROJECT_HAS_NO_LYRICS("Project has no lyrics", HttpStatus.NOT_FOUND)
-    ;
+    FFMPEG_ADD_LYRIC_FAIL("FFmpeg processing failed  for add Ass to video", HttpStatus.BAD_REQUEST),
+    FFMPEG_GET_DURATION_VIDEO_FAIL("FFmpeg processing failed  get VideoDuration", HttpStatus.BAD_REQUEST),
+    PROJECT_HAS_NO_LYRICS("Project has no lyrics", HttpStatus.NOT_FOUND),
+    INVALID_TRANSITION_TYPE("Invalid transition type", HttpStatus.BAD_REQUEST),
+    NO_VIDEOS_PROVIDED("No videos provided", HttpStatus.BAD_REQUEST);
 
     private final String message;
     private final HttpStatusCode httpStatusCode;

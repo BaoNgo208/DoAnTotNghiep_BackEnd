@@ -1,5 +1,6 @@
 package com.example.spring_boot_react_demo.controller;
 
+import com.example.spring_boot_react_demo.model.dto.request.ApplyTransitionRequest;
 import com.example.spring_boot_react_demo.model.dto.response.ApiResponse;
 import com.example.spring_boot_react_demo.model.dto.response.VideoResponse;
 import com.example.spring_boot_react_demo.service.VideoService;
@@ -8,6 +9,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import java.io.IOException;
+import java.util.Base64;
 import java.util.List;
 
 @RestController
@@ -28,6 +31,15 @@ public class VideoController {
     public ApiResponse<String> deleteVideo(@RequestParam Long videoId) {
         return ApiResponse.<String>builder()
                 .result(videoService.deleteVideo(videoId))
+                .build();
+    }
+
+    @PostMapping("/applyTransition")
+    public ApiResponse<?> applyTransition(@RequestBody ApplyTransitionRequest applyTransitionRequest) throws IOException {
+
+        MultipartFile result = videoService.applyTransition(applyTransitionRequest);
+        return ApiResponse.builder()
+                .result(Base64.getEncoder().encodeToString(result.getBytes()))
                 .build();
     }
 }
