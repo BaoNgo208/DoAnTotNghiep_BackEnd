@@ -96,7 +96,8 @@ public class ProjectServiceImpl implements ProjectService {
         }
     }
 
-    private Project getProjectById(Long projectId){
+    @Override
+    public Project getProjectById(Long projectId){
         return projectRepo.findById(projectId)
                 .orElseThrow(() -> new AppException(ErrorCode.PROJECT_NOT_FOUND));
     }
