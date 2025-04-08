@@ -1,12 +1,17 @@
 package com.example.spring_boot_react_demo.util;
 
+import com.example.spring_boot_react_demo.model.LyricSegment;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.List;
+
 import static com.example.spring_boot_react_demo.util.Constants.*;
+import static com.example.spring_boot_react_demo.util.AssDialogueConstants.*;
 
 public class AssUtil {
     public static File createAssFile(String text) {
@@ -29,8 +34,8 @@ public class AssUtil {
         String[] lines = inputText.split(NEW_LINE);
 
         for (String line : lines) {
-            if (line.startsWith("Dialogue:") && !line.matches(".*\\{\\\\k[\\d]+\\}.*")) {
-                modifiedText.append(modifyDialogue(line)).append(NEW_LINE);
+            if (line.startsWith(DIALOGUE_TEXT) && !line.matches(".*\\{\\\\k[\\d]+\\}.*")) {
+                modifiedText.append(modifyDialogueForKaraoke(line)).append(NEW_LINE);
             } else {
                 modifiedText.append(line).append(NEW_LINE);
             }
@@ -39,7 +44,52 @@ public class AssUtil {
         return modifiedText.toString();
     }
 
-    private static String modifyDialogue(String line) {
+    public static List<LyricSegment> convertAssTextToList(String text){
+        List<LyricSegment> lyricSegments = new ArrayList<>();
+        String[] lines = text.split(NEW_LINE);
+        for (String line : lines) {
+            if (line.startsWith(DIALOGUE_TEXT) && !line.matches(".*\\{\\\\k[\\d]+\\}.*")) {
+                lyricSegments.add(convertLineToLyricSegment(line));
+            }
+        }
+        return lyricSegments;
+    }
+    public static String convertListToAssText(List<LyricSegment> lyricSegments, String text){
+        StringBuilder modifiedText = new StringBuilder();
+        String[] lines = text.split(NEW_LINE);
+
+        for (String line : lines) {
+            if (!line.startsWith(DIALOGUE_TEXT)) {
+                modifiedText.append(line).append(NEW_LINE);
+            }
+        }
+        for (LyricSegment lyricSegment : lyricSegments) {
+            modifiedText.append("Dialogue: 0,"
+                    + formatTime(lyricSegment.getStartTime())
+                    + COMMA
+                    + formatTime(lyricSegment.getEndTime())
+                    + ",Default,,0,0,0,,"
+                    + lyricSegment.getText()).append(NEW_LINE);
+        }
+        return modifiedText.toString();
+    }
+
+    private static LyricSegment convertLineToLyricSegment(String line){
+
+        String[] parts = line.split(COMMA, DIALOGUE_PARTS);
+        if (parts.length >= DIALOGUE_PARTS) {
+            double start = parseTime(parts[START_INDEX]);
+            double end = parseTime(parts[END_INDEX]);
+            String dialogueText = parts[TEXT_INDEX];
+
+            if (!dialogueText.isEmpty()) {
+                return new LyricSegment(dialogueText, start, end);
+            }
+        }
+        return null;
+    }
+
+    private static String modifyDialogueForKaraoke(String line) {
         String[] parts = line.split(COMMA, DIALOGUE_PARTS);
         if (parts.length < DIALOGUE_PARTS) return line;
 
@@ -58,7 +108,7 @@ public class AssUtil {
         return String.join(COMMA, parts);
     }
 
-    public static int calculateKaraokeTimings(String[] parts) {
+    private static int calculateKaraokeTimings(String[] parts) {
         double startTime = parseTime(parts[1]);
         double endTime = parseTime(parts[2]);
         int totalTime = (int) ((endTime - startTime) * 100);
@@ -78,5 +128,14 @@ public class AssUtil {
         int milliseconds = Integer.parseInt(parts[3]);
 
         return hours * 3600 + minutes * 60 + seconds + milliseconds / 100.0;
+    }
+    private static String formatTime(double timeInSeconds) {
+        int totalMilliseconds = (int)(timeInSeconds * 1000);
+        int hours = totalMilliseconds / 3600000;
+        int minutes = (totalMilliseconds % 3600000) / 60000;
+        int seconds = (totalMilliseconds % 60000) / 1000;
+        int milliseconds = totalMilliseconds % 1000;
+
+        return String.format("%02d:%02d:%02d.%03d", hours, minutes, seconds, milliseconds);
     }
 }

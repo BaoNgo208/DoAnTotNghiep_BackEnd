@@ -1,7 +1,6 @@
 package com.example.spring_boot_react_demo.util;
 
 import okhttp3.MediaType;
-import org.springframework.beans.factory.annotation.Value;
 
 public final class Constants {
     private Constants() {
@@ -20,8 +19,6 @@ public final class Constants {
     public static final String NEW_LINE = "\n";
     public static final String COMMA = ",";
     public static final String SPACE = " ";
-    public static final int DIALOGUE_PARTS = 10;
-    public static final int TEXT_INDEX = 9;
     public static final String LYRICS_FILE = "lyrics.ass";
     public static final String TEMP_VIDEO_FILE = "temp_video";
     public static final String OUTPUT_VIDEO_FILE = "output";

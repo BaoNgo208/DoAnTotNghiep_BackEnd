@@ -14,6 +14,7 @@ public enum ErrorCode {
     PROJECT_HAS_NO_LYRICS("Project has no lyrics", HttpStatus.NOT_FOUND),
     INVALID_TRANSITION_TYPE("Invalid transition type", HttpStatus.BAD_REQUEST),
     NO_VIDEOS_PROVIDED("No videos provided", HttpStatus.BAD_REQUEST),
+    CANNOT_APPLY_TRANSITION("Cannot apply transition effect to the project", HttpStatus.BAD_REQUEST),
     UNAUTHORIZED("Unauthorized: Token expired or invalid", HttpStatus.UNAUTHORIZED);
 
     private final String message;

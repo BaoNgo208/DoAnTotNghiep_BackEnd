@@ -2,8 +2,11 @@ package com.example.spring_boot_react_demo.service.impl;
 
 import com.example.spring_boot_react_demo.exception.AppException;
 import com.example.spring_boot_react_demo.exception.ErrorCode;
+import com.example.spring_boot_react_demo.model.LyricSegment;
 import com.example.spring_boot_react_demo.model.dto.response.LyricResponse;
 import com.example.spring_boot_react_demo.model.entity.Lyric;
+import com.example.spring_boot_react_demo.model.entity.Project;
+import com.example.spring_boot_react_demo.model.entity.Video;
 import com.example.spring_boot_react_demo.repository.LyricRepo;
 import com.example.spring_boot_react_demo.service.CloudinaryService;
 import com.example.spring_boot_react_demo.service.FFmpegService;
@@ -17,6 +20,9 @@ import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import static com.example.spring_boot_react_demo.util.AssUtil.*;
+import static com.example.spring_boot_react_demo.util.Constants.MP4;
+import static com.example.spring_boot_react_demo.util.Constants.OUTPUT_VIDEO_FILE;
+import static com.example.spring_boot_react_demo.util.FileUtil.deleteFileIfExists;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -27,6 +33,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.TreeMap;
 
 @Service
 @RequiredArgsConstructor
@@ -110,6 +117,38 @@ public class LyricServiceImpl implements LyricService {
         lyric.setText(modifyASSContent(lyric.getText()));
         lyricRepository.save(lyric);
         return ffmpegService.addAssToVideo(videoFile, createAssFile(lyric.getText()));
+    }
+
+    @Override
+    public String cutLyricsByTimeRange(TreeMap<Integer, Video> videosMap, String text, Double duration){
+        List<Integer> keys = new ArrayList<>(videosMap.keySet());
+        String result = null;
+        for (int i = 1 ; i < keys.size() ; i++) {
+            double cutStart = videosMap.get(i-1).getEndTime() - (duration * i);
+            double cutEnd = videosMap.get(i).getStartTime() + duration * (2 - i);
+            result = cutLyricsByTimeRange(text, cutStart, cutEnd);
+        }
+        return result;
+    }
+
+
+    private String cutLyricsByTimeRange(String text, Double cutStart, Double cutEnd) {
+        List<LyricSegment> lyricSegments = convertAssTextToList(text);
+        List<LyricSegment> result = new ArrayList<>();
+        Double duration = (cutEnd - cutStart) / 2;
+        for (LyricSegment lyric : lyricSegments) {
+            double startTime = lyric.getStartTime();
+            double endTime = lyric.getEndTime();
+            if(endTime < cutStart ) {
+                result.add(lyric);
+            }
+            else if(startTime > cutEnd){
+                lyric.setStartTime(startTime - duration);
+                lyric.setEndTime(endTime - duration);
+                result.add(lyric);
+            }
+        }
+        return convertListToAssText(result, text);
     }
 
     private File createMinimalAssFile() throws IOException {

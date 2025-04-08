@@ -7,14 +7,18 @@ import com.example.spring_boot_react_demo.model.MediaType;
 import com.example.spring_boot_react_demo.model.dto.request.ApplyTransitionRequest;
 import com.example.spring_boot_react_demo.model.dto.request.VideoRequest;
 import com.example.spring_boot_react_demo.model.dto.response.VideoResponse;
+import com.example.spring_boot_react_demo.model.entity.Lyric;
 import com.example.spring_boot_react_demo.model.entity.Project;
 import com.example.spring_boot_react_demo.model.entity.Video;
+import com.example.spring_boot_react_demo.repository.LyricRepo;
 import com.example.spring_boot_react_demo.repository.ProjectRepo;
 import com.example.spring_boot_react_demo.repository.VideoRepo;
 import com.example.spring_boot_react_demo.service.CloudinaryService;
 import com.example.spring_boot_react_demo.service.FFmpegService;
 import com.example.spring_boot_react_demo.service.LyricService;
 import com.example.spring_boot_react_demo.service.VideoService;
+
+import static com.example.spring_boot_react_demo.util.AssUtil.createAssFile;
 import static com.example.spring_boot_react_demo.util.Constants.*;
 import static com.example.spring_boot_react_demo.util.ConvertUtils.*;
 import lombok.AccessLevel;
@@ -44,6 +48,7 @@ public class VideoServiceImpl implements VideoService {
     CloudinaryService cloudinaryService;
     FFmpegService ffmpegService;
     LyricService lyricService;
+    private final LyricRepo lyricRepo;
 
     @Override
     public List<VideoResponse> addVideo(List<MultipartFile> files, Long projectId) {
@@ -79,30 +84,46 @@ public class VideoServiceImpl implements VideoService {
     public MultipartFile applyTransition (ApplyTransitionRequest applyTransitionRequest) throws IOException {
         Project project = projectRepo.findById(applyTransitionRequest.getProjectId())
                 .orElseThrow(()-> new AppException(ErrorCode.PROJECT_NOT_FOUND));
-        TreeMap<Integer, String> videosMap = convertListVideoToMap(project.getVideo());
-
-        FFmpegTransition ffmpegTransition = FFmpegTransition.fromString(applyTransitionRequest.getTransitionType());
-
-        List<Integer> keys = new ArrayList<>(videosMap.keySet());
-        String prevVideoPath = videosMap.get(keys.get(0));
-        String outputPath = null;
-        for (int i = 1 ; i < keys.size() ; i++) {
-            String nextVideoPath = videosMap.get(keys.get(i));
-            outputPath = OUTPUT_VIDEO_FILE + i + MP4;
-            ffmpegService.applyTransition(prevVideoPath, nextVideoPath, outputPath, ffmpegTransition, applyTransitionRequest.getDuration(), project.getSize());
-            prevVideoPath = outputPath;
-            deleteFileIfExists(OUTPUT_VIDEO_FILE + (i-1) + MP4);
+        if(project.getBackground() != null || project.getVideo().size() == ONE) {
+            throw new AppException(ErrorCode.CANNOT_APPLY_TRANSITION);
         }
-        assert outputPath != null;
+        TreeMap<Integer, Video> videosMap = convertListVideoToMap(project.getVideo());
 
+        String outputPath = processVideosWithTransitions(videosMap, applyTransitionRequest, project.getSize());
         MultipartFile outputMultipal = convertFileToMultipartFile(new File(outputPath));
-
         if(project.getLyric() != null) {
-            outputMultipal = lyricService.addLyricToVideo(outputMultipal, project.getId());
+            Lyric lyric = project.getLyric();
+            String newLyric ;
+            if(lyric.getOriginalText() != null && !lyric.isLyricHidden()) {
+                newLyric = lyricService.cutLyricsByTimeRange(videosMap, lyric.getOriginalText(), applyTransitionRequest.getDuration());
+            }else {
+                newLyric = lyricService.cutLyricsByTimeRange(videosMap, lyric.getText(), applyTransitionRequest.getDuration());
+                lyric.setOriginalText(lyric.getText());
+            }
+            lyric.setText(newLyric);
+            lyricRepo.save(lyric);
+            outputMultipal = ffmpegService.addAssToVideo(outputMultipal, createAssFile(newLyric));
         }
 
         deleteFileIfExists(outputPath);
         return outputMultipal;
+    }
+
+    private String processVideosWithTransitions(TreeMap<Integer, Video> videosMap, ApplyTransitionRequest applyTransitionRequest, String size) {
+        FFmpegTransition ffmpegTransition = FFmpegTransition.fromString(applyTransitionRequest.getTransitionType());
+
+        List<Integer> keys = new ArrayList<>(videosMap.keySet());
+        String prevVideoPath = videosMap.get(keys.get(0)).getAsset();
+        String outputPath = null;
+        for (int i = 1 ; i < keys.size() ; i++) {
+            String nextVideoPath = videosMap.get(keys.get(i)).getAsset();
+            outputPath = OUTPUT_VIDEO_FILE + i + MP4;
+            ffmpegService.applyTransition(prevVideoPath, nextVideoPath, outputPath, ffmpegTransition, applyTransitionRequest.getDuration(), size);
+            prevVideoPath = outputPath;
+            deleteFileIfExists(OUTPUT_VIDEO_FILE + (i-1) + MP4);
+        }
+        assert outputPath != null;
+        return outputPath;
     }
 
     public VideoResponse addVideo(MultipartFile file, Project project) {
@@ -117,12 +138,12 @@ public class VideoServiceImpl implements VideoService {
         return maptoVideoResponse(videoRepo.save(video));
     }
 
-    private TreeMap<Integer, String> convertListVideoToMap(List<Video> videoList) {
+    private TreeMap<Integer, Video> convertListVideoToMap(List<Video> videoList) {
         return videoList.stream()
                 .sorted(Comparator.comparingDouble(Video::getStartTime))
                 .collect(Collectors.toMap(
                         videoList::indexOf,
-                        Video::getAsset,
+                        v -> v,
                         (v1, v2) -> v1,
                         TreeMap::new
                 ));

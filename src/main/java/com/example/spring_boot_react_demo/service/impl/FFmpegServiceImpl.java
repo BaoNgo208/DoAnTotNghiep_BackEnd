@@ -68,15 +68,14 @@ public class FFmpegServiceImpl implements FFmpegService {
         try {
             runFFmpegCommand(Arrays.asList(
                     "ffmpeg", "-y",
-                    "-i", video1,
-                    "-i", video2,
+                    "-i", addSizeForUrl(video1, size),
+                    "-i", addSizeForUrl(video2, size),
                     "-filter_complex",
-                    "[0:v]fps=30,scale=" + size.replace("x", ":") + ",settb=AVTB,format=yuv420p[v0];"
-                            + "[1:v]fps=30,scale=" + size.replace("x", ":") + ",settb=AVTB,format=yuv420p,tpad=start_duration=" + duration
-                            + ",fade=t=in:st=" + duration + ":d=" + duration + "[v1];"
+                    "[0:v]fps=30,settb=AVTB,format=yuv420p[v0];"
+                            + "[1:v]fps=30,settb=AVTB,format=yuv420p[v1];"
                             + "[v0][v1]xfade=transition=" + transition.getTransitionName() + ":duration=" + duration + ":offset=" + fadeOutStartTime + "[v];"
                             + "[0:a]afade=t=out:st=" + fadeOutStartTime + ":d=" + duration + "[a1];"
-                            + "[1:a]adelay=" + (video1Duration * 1000) + "|" + (video1Duration * 1000) + ",afade=t=in:st=0:d=" + duration + "[a2];"
+                            + "[1:a]adelay=" + (fadeOutStartTime * 1000) + "|" + (fadeOutStartTime * 1000) + ",afade=t=in:st=0:d=" + duration + "[a2];"
                             + "[a1][a2]amix=inputs=2[a]",
                     "-map", "[v]", "-map", "[a]", "-c:v", "libx264", "-pix_fmt", "yuv420p",
                     "-preset", "ultrafast", "-crf", "23", "-c:a", "aac", "-b:a", "128k",
@@ -116,6 +115,18 @@ public class FFmpegServiceImpl implements FFmpegService {
         } catch (IOException | InterruptedException e) {
             throw new AppException(ErrorCode.FFMPEG_GET_DURATION_VIDEO_FAIL);
         }
+    }
+
+    private String addSizeForUrl(String url, String size) {
+        //Parses a size string in the format: WxH
+        String[] dimensions = size.split("x");
+        String resizeParams = "w_" + dimensions[0] + ",h_" + dimensions[1] + ",c_fill/";
+
+        int i = url.indexOf("/upload/");
+        if (i == -1) throw new IllegalArgumentException("Invalid Cloudinary URL");
+
+        // +8 to include "/upload/" in the prefix
+        return url.substring(0, i + 8) + resizeParams + url.substring(i + 8);
     }
 
     private String runFFmpegCommand(List<String> command) throws IOException, InterruptedException {
