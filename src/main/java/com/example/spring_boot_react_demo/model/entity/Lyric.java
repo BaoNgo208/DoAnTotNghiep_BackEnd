@@ -31,6 +31,9 @@ public class Lyric {
     @Column(name = "is_lyric_hidden", nullable = false)
     boolean isLyricHidden;
 
-    @Column(name = "original_lyric_text", nullable = true)
+    @Column(name = "original_lyric_text")
     private String originalText;
+
+    @Column(name = "effect_lyric_text")
+    private String effectText;
 }

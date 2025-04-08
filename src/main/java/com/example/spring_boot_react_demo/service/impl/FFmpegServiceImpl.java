@@ -4,17 +4,18 @@ import com.example.spring_boot_react_demo.enums.FFmpegTransition;
 import com.example.spring_boot_react_demo.exception.AppException;
 import com.example.spring_boot_react_demo.exception.ErrorCode;
 import com.example.spring_boot_react_demo.service.FFmpegService;
+
 import static com.example.spring_boot_react_demo.util.ConvertUtils.*;
 import static com.example.spring_boot_react_demo.util.FileUtil.*;
 import static com.example.spring_boot_react_demo.util.Constants.*;
 
-import com.example.spring_boot_react_demo.util.Constants;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+
 import java.io.*;
 import java.util.Arrays;
 import java.util.List;
@@ -22,7 +23,7 @@ import java.util.List;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-@FieldDefaults(level =  AccessLevel.PRIVATE, makeFinal = true)
+@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class FFmpegServiceImpl implements FFmpegService {
 
     @Override
@@ -34,8 +35,8 @@ public class FFmpegServiceImpl implements FFmpegService {
                     "-i", inputVideoPath,
                     outputVideoPath
             ));
-        }catch (IOException | InterruptedException e){
-            e.printStackTrace();
+        } catch (IOException | InterruptedException e) {
+            log.error(e.getMessage());
         }
         return outputVideoPath;
     }
@@ -55,21 +56,21 @@ public class FFmpegServiceImpl implements FFmpegService {
             deleteFileIfExists(tempVideoFile.getAbsolutePath());
             deleteFileIfExists(outputPath);
             return mergedFile;
-        } catch (IOException  e) {
-            e.printStackTrace();
+        } catch (IOException e) {
+            log.error(e.getMessage());
             return null;
         }
     }
 
     @Override
-    public void applyTransition(String video1, String video2, String outputPath, FFmpegTransition transition, Double duration, String size) {
-        Double video1Duration = getVideoDuration(video1);
-        Double fadeOutStartTime = video1Duration - duration;
+    public void applyTransition(String prevVideo, String nextVideo, String outputPath, FFmpegTransition transition, Double duration, String size) {
+        Double video1Duration = getVideoDuration(prevVideo);
+        double fadeOutStartTime = video1Duration - duration;
         try {
             runFFmpegCommand(Arrays.asList(
                     "ffmpeg", "-y",
-                    "-i", addSizeForUrl(video1, size),
-                    "-i", addSizeForUrl(video2, size),
+                    "-i", addSizeForUrl(prevVideo, size),
+                    "-i", addSizeForUrl(nextVideo, size),
                     "-filter_complex",
                     "[0:v]fps=30,settb=AVTB,format=yuv420p[v0];"
                             + "[1:v]fps=30,settb=AVTB,format=yuv420p[v1];"
@@ -81,8 +82,25 @@ public class FFmpegServiceImpl implements FFmpegService {
                     "-preset", "ultrafast", "-crf", "23", "-c:a", "aac", "-b:a", "128k",
                     outputPath
             ));
-        }catch (IOException | InterruptedException e) {
-            e.printStackTrace();
+        } catch (IOException | InterruptedException e) {
+            log.error(e.getMessage());
+        }
+    }
+
+    @Override
+    public void mergeVideo(String prevVideo, String nextVideo, String outputPath, String size) {
+        try {
+            runFFmpegCommand(Arrays.asList(
+                    "ffmpeg",
+                    "-i", addSizeForUrl(prevVideo, size),
+                    "-i", addSizeForUrl(nextVideo, size),
+                    "-filter_complex", "[0:v:0] [0:a:0] [1:v:0] [1:a:0] concat=n=2:v=1:a=1 [v] [a]",
+                    "-map", "[v]",
+                    "-map", "[a]",
+                    outputPath
+            ));
+        } catch (IOException | InterruptedException e) {
+            log.error(e.getMessage());
         }
     }
 
@@ -123,7 +141,7 @@ public class FFmpegServiceImpl implements FFmpegService {
         String resizeParams = "w_" + dimensions[0] + ",h_" + dimensions[1] + ",c_fill/";
 
         int i = url.indexOf("/upload/");
-        if (i == -1) throw new IllegalArgumentException("Invalid Cloudinary URL");
+        if (i == -1) return url;
 
         // +8 to include "/upload/" in the prefix
         return url.substring(0, i + 8) + resizeParams + url.substring(i + 8);
@@ -144,8 +162,8 @@ public class FFmpegServiceImpl implements FFmpegService {
         int exitCode = process.waitFor();
 
         if (exitCode != 0) {
-            log.info(output.toString());
-            throw new RuntimeException("FFmpeg execution failed with exit code: " + exitCode );
+            log.error(output.toString());
+            throw new RuntimeException("FFmpeg execution failed with exit code: " + exitCode);
         }
         return output.toString();
     }

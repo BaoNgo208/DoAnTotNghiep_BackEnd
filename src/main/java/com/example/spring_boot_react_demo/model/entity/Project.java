@@ -40,8 +40,14 @@ public class Project {
     List<Video> Video = new ArrayList<>();
 
     @OneToOne(mappedBy = "project", cascade = CascadeType.ALL, orphanRemoval = true)
-    private Background background;
+    Background background;
 
     @OneToOne(mappedBy = "project", cascade = CascadeType.ALL, orphanRemoval = true)
-    private Lyric lyric;
+    Lyric lyric;
+
+    @Column(name = "is_effect")
+    boolean isEffect = false;
+
+    @Column(name = "effect_duration")
+    Double duration;
 }

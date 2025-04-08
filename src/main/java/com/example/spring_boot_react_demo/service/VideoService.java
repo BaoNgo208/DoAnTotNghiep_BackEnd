@@ -12,4 +12,5 @@ public interface VideoService {
     String deleteVideo(Long id);
     void updateVideo(VideoRequest backgroundRequest);
     MultipartFile applyTransition (ApplyTransitionRequest applyTransitionRequest) throws IOException;
+    MultipartFile removeEffect(Long projectId) throws IOException;
 }

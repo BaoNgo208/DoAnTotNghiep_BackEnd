@@ -1,19 +1,25 @@
 package com.example.spring_boot_react_demo.service.impl;
 
+import com.example.spring_boot_react_demo.exception.AppException;
+import com.example.spring_boot_react_demo.exception.ErrorCode;
 import com.example.spring_boot_react_demo.model.entity.Lyric;
 import com.example.spring_boot_react_demo.model.entity.Project;
 import com.example.spring_boot_react_demo.repository.LyricRepo;
 import com.example.spring_boot_react_demo.repository.ProjectRepo;
 import com.example.spring_boot_react_demo.service.CloudinaryService;
 import com.example.spring_boot_react_demo.service.FFmpegService;
+import com.example.spring_boot_react_demo.service.LyricService;
 import com.example.spring_boot_react_demo.service.WhisperService;
 import com.example.spring_boot_react_demo.util.Constants;
+import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
+import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.*;
 import org.cloudinary.json.JSONArray;
 import org.cloudinary.json.JSONObject;
 import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import static com.example.spring_boot_react_demo.util.AssUtil.*;
@@ -27,14 +33,16 @@ import static com.example.spring_boot_react_demo.util.ConvertUtils.convertMultip
 @Service
 @RequiredArgsConstructor
 @Slf4j
+@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class WhisperServiceImpl implements WhisperService {
 
-    private final CloudinaryService cloudinaryService;
-    private final FFmpegService ffmpegService;
-    private final LyricRepo lyricRepository;
-    private final ProjectRepo projectRepository;
+    CloudinaryService cloudinaryService;
+    FFmpegService ffmpegService;
+    LyricService lyricService;
+    LyricRepo lyricRepository;
+    ProjectRepo projectRepository;
 
-    private final OkHttpClient httpClient = new OkHttpClient.Builder()
+    OkHttpClient httpClient = new OkHttpClient.Builder()
             .connectTimeout(30, TimeUnit.SECONDS)
             .writeTimeout(30, TimeUnit.SECONDS)
             .readTimeout(30, TimeUnit.SECONDS)
@@ -118,14 +126,21 @@ public class WhisperServiceImpl implements WhisperService {
         }
     }
 
-    private void saveAssContent(MultipartFile assFile, Long projectId) throws IOException {
+    @Async
+    protected void saveAssContent(MultipartFile assFile, Long projectId) throws IOException {
         Project project = projectRepository.findById(projectId)
-                .orElseThrow(() -> new IllegalArgumentException("Project not found with ID: " + projectId));
+                .orElseThrow(() -> new AppException(ErrorCode.PROJECT_NOT_FOUND));
 
         String assContent = new String(assFile.getBytes(), StandardCharsets.UTF_8);
         Lyric lyric = new Lyric();
-        lyric.setText(assContent);
         lyric.setProject(project);
+        lyric.setText(assContent);
+        if(project.isEffect()) {
+            lyric.setEffectText(assContent);
+            String originText = lyricService.convertEffectTextToOriginal(project.getVideo(), assContent, project.getDuration());
+            lyric.setOriginalText(originText);
+        }
+        else lyric.setOriginalText(assContent);
         lyricRepository.save(lyric);
     }
 }

@@ -7,5 +7,6 @@ import java.io.File;
 public interface FFmpegService {
     MultipartFile addAssToVideo(MultipartFile videoFile, File assFile);
     String convertVideo(String inputVideoPath, String outputFileExtension);
-    void applyTransition(String video1, String video2, String outputPath, FFmpegTransition transition, Double duration, String size);
-}
+    void applyTransition(String prevVideo, String nextVideo, String outputPath, FFmpegTransition transition, Double duration, String size);
+    void mergeVideo(String prevVideo, String nextVideo, String outputPath, String size);
+    }

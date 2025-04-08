@@ -1,11 +1,16 @@
 package com.example.spring_boot_react_demo.util;
 
+import com.example.spring_boot_react_demo.model.entity.Video;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.web.multipart.MultipartFile;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.Comparator;
+import java.util.List;
+import java.util.TreeMap;
+import java.util.stream.Collectors;
 
 public class ConvertUtils {
     public static MultipartFile convertFileToMultipartFile(File file) throws IOException {
@@ -24,5 +29,15 @@ public class ConvertUtils {
             throw new RuntimeException("Failed to convert MultipartFile to File", e);
         }
         return file;
+    }
+    public static TreeMap<Integer, Video> convertListVideoToMap(List<Video> videoList) {
+        return videoList.stream()
+                .sorted(Comparator.comparingDouble(Video::getStartTime))
+                .collect(Collectors.toMap(
+                        videoList::indexOf,
+                        v -> v,
+                        (v1, v2) -> v1,
+                        TreeMap::new
+                ));
     }
 }

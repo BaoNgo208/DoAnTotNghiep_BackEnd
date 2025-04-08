@@ -42,4 +42,12 @@ public class VideoController {
                 .result(Base64.getEncoder().encodeToString(result.getBytes()))
                 .build();
     }
+
+    @PostMapping("/removeEffect")
+    public ApiResponse<?> removeEffect(@RequestParam Long projectId) throws IOException {
+        MultipartFile result = videoService.removeEffect(projectId);
+        return ApiResponse.builder()
+                .result(Base64.getEncoder().encodeToString(result.getBytes()))
+                .build();
+    }
 }

@@ -81,7 +81,6 @@ public class AssUtil {
             double start = parseTime(parts[START_INDEX]);
             double end = parseTime(parts[END_INDEX]);
             String dialogueText = parts[TEXT_INDEX];
-
             if (!dialogueText.isEmpty()) {
                 return new LyricSegment(dialogueText, start, end);
             }
@@ -127,7 +126,7 @@ public class AssUtil {
         int seconds = Integer.parseInt(parts[2]);
         int milliseconds = Integer.parseInt(parts[3]);
 
-        return hours * 3600 + minutes * 60 + seconds + milliseconds / 100.0;
+        return hours * 3600 + minutes * 60 + seconds + milliseconds / 1000.0;
     }
     private static String formatTime(double timeInSeconds) {
         int totalMilliseconds = (int)(timeInSeconds * 1000);
