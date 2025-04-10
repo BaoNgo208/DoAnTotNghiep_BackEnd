@@ -1,5 +1,7 @@
 package com.example.spring_boot_react_demo.service.impl;
 
+import com.example.spring_boot_react_demo.exception.AppException;
+import com.example.spring_boot_react_demo.exception.ErrorCode;
 import com.example.spring_boot_react_demo.util.Constants;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -56,33 +58,39 @@ public class YouTubeService {
     }
 
     public String uploadToYouTube(String accessToken, String videoUrl) throws Exception {
-        HttpHeaders headers = new HttpHeaders();
-        headers.set("Authorization", "Bearer " + accessToken);
-        headers.setContentType(MediaType.MULTIPART_FORM_DATA);
+        try {
+            HttpHeaders headers = new HttpHeaders();
+            headers.set("Authorization", "Bearer " + accessToken);
+            headers.setContentType(MediaType.MULTIPART_FORM_DATA);
 
-        URL url = new URL(videoUrl);
-        URLConnection connection = url.openConnection();
-        InputStream inputStream = connection.getInputStream();
+            URL url = new URL(videoUrl);
+            URLConnection connection = url.openConnection();
+            InputStream inputStream = connection.getInputStream();
 
-        byte[] videoBytes = inputStream.readAllBytes();
+            byte[] videoBytes = inputStream.readAllBytes();
 
-        String metadata = "{\"snippet\": {\"title\": \"My Edited Video\", \"description\": \"Uploaded via API\"}, \"status\": {\"privacyStatus\": \"public\"}}";
+            String metadata = "{\"snippet\": {\"title\": \"My Edited Video\", \"description\": \"Uploaded via API\"}, \"status\": {\"privacyStatus\": \"public\"}}";
 
-        MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
+            MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
 
-        body.add("metadata", new HttpEntity<>(metadata, headers));
+            body.add("metadata", new HttpEntity<>(metadata, headers));
 
-        body.add("file", new ByteArrayResource(videoBytes) {
-            @Override
-            public String getFilename() {
-                return OUTPUT_VIDEO_FILE;
-            }
-        });
-        HttpEntity<MultiValueMap<String, Object>> request = new HttpEntity<>(body, headers);
-        RestTemplate restTemplate = new RestTemplate();
+            body.add("file", new ByteArrayResource(videoBytes) {
+                @Override
+                public String getFilename() {
+                    return OUTPUT_VIDEO_FILE;
+                }
+            });
 
-        ResponseEntity<Map> response = restTemplate.postForEntity(uploadUrl, request, Map.class);
+            HttpEntity<MultiValueMap<String, Object>> request = new HttpEntity<>(body, headers);
+            RestTemplate restTemplate = new RestTemplate();
 
-        return (String) response.getBody().get("id");
+            ResponseEntity<Map> response = restTemplate.postForEntity(uploadUrl, request, Map.class);
+
+            return (String) response.getBody().get("id");
+        } catch (org.springframework.web.client.HttpClientErrorException.Unauthorized e) {
+            throw new AppException(ErrorCode.UNAUTHORIZED);
+        }
     }
+
 }

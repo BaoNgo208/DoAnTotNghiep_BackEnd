@@ -1,5 +1,7 @@
 package com.example.spring_boot_react_demo.controller;
 
+import com.example.spring_boot_react_demo.exception.AppException;
+import com.example.spring_boot_react_demo.exception.ErrorCode;
 import com.example.spring_boot_react_demo.service.impl.YouTubeService;
 import com.mysql.cj.util.StringUtils;
 import org.springframework.http.*;
@@ -39,13 +41,21 @@ public class YouTubeController {
 
             String videoUrl = projectService.getProjectById(projectId).getAsset();
             if (StringUtils.isNullOrEmpty(videoUrl)) {
-                return ResponseEntity.badRequest().body("No video found for projectId: " + projectId);
+                throw new AppException(ErrorCode.VIDEO_NOT_FOUND);
             }
 
             String videoId = youTubeService.uploadToYouTube(accessToken, videoUrl);
             return ResponseEntity.ok(Map.of("videoId", videoId));
+
+        } catch (AppException e) {
+            return ResponseEntity
+                    .status(e.getErrorCode().getHttpStatusCode().value())
+                    .body(e.getErrorCode().getMessage());
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
+            return ResponseEntity
+                    .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(e.getMessage());
         }
     }
+
 }

@@ -13,7 +13,8 @@ public enum ErrorCode {
     FFMPEG_GET_DURATION_VIDEO_FAIL("FFmpeg processing failed  get VideoDuration", HttpStatus.BAD_REQUEST),
     PROJECT_HAS_NO_LYRICS("Project has no lyrics", HttpStatus.NOT_FOUND),
     INVALID_TRANSITION_TYPE("Invalid transition type", HttpStatus.BAD_REQUEST),
-    NO_VIDEOS_PROVIDED("No videos provided", HttpStatus.BAD_REQUEST);
+    NO_VIDEOS_PROVIDED("No videos provided", HttpStatus.BAD_REQUEST),
+    UNAUTHORIZED("Unauthorized: Token expired or invalid", HttpStatus.UNAUTHORIZED);
 
     private final String message;
     private final HttpStatusCode httpStatusCode;
