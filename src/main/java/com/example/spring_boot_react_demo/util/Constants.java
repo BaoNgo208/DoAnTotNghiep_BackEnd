@@ -24,4 +24,6 @@ public final class Constants {
     public static final String OUTPUT_VIDEO_FILE = "output";
     public static final String MP4 = ".mp4";
     public static final String SIZE = "640x360";
+    public static final String EMPTY_VALUE = "";
+    public static final String DASH = "_";
 }

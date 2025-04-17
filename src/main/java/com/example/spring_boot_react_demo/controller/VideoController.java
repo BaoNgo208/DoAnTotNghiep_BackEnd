@@ -1,6 +1,8 @@
 package com.example.spring_boot_react_demo.controller;
 
+import com.example.spring_boot_react_demo.model.dto.request.AddVideosRequest;
 import com.example.spring_boot_react_demo.model.dto.request.ApplyTransitionRequest;
+import com.example.spring_boot_react_demo.model.dto.request.VideoRequest;
 import com.example.spring_boot_react_demo.model.dto.response.ApiResponse;
 import com.example.spring_boot_react_demo.model.dto.response.VideoResponse;
 import com.example.spring_boot_react_demo.service.VideoService;
@@ -21,9 +23,9 @@ public class VideoController {
     VideoService videoService;
 
     @PostMapping()
-    public ApiResponse<List<VideoResponse>> addVideo(@RequestParam List<MultipartFile> files, @RequestParam Long projectId) {
+    public ApiResponse<List<VideoResponse>> addVideo(@RequestBody AddVideosRequest request) {
         return ApiResponse.<List<VideoResponse>>builder()
-                .result(videoService.addVideo( files, projectId))
+                .result(videoService.addVideo(request))
                 .build();
     }
 

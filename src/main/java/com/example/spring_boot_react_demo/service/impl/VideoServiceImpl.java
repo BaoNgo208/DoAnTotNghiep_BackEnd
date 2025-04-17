@@ -4,6 +4,7 @@ import com.example.spring_boot_react_demo.enums.FFmpegTransition;
 import com.example.spring_boot_react_demo.exception.AppException;
 import com.example.spring_boot_react_demo.exception.ErrorCode;
 import com.example.spring_boot_react_demo.model.MediaType;
+import com.example.spring_boot_react_demo.model.dto.request.AddVideosRequest;
 import com.example.spring_boot_react_demo.model.dto.request.ApplyTransitionRequest;
 import com.example.spring_boot_react_demo.model.dto.request.VideoRequest;
 import com.example.spring_boot_react_demo.model.dto.response.VideoResponse;
@@ -22,6 +23,7 @@ import static com.example.spring_boot_react_demo.util.Constants.*;
 import static com.example.spring_boot_react_demo.util.ConvertUtils.*;
 import static com.example.spring_boot_react_demo.util.EntityMapper.maptoVideoResponse;
 import static com.example.spring_boot_react_demo.util.FileUtil.*;
+import static com.example.spring_boot_react_demo.util.CloudinaryUtil.*;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -48,12 +50,12 @@ public class VideoServiceImpl implements VideoService {
     LyricRepo lyricRepo;
 
     @Override
-    public List<VideoResponse> addVideo(List<MultipartFile> files, Long projectId) {
+    public List<VideoResponse> addVideo(AddVideosRequest addVideosRequest) {
         List<VideoResponse> assets = new ArrayList<>();
-        Project project = projectRepo.findById(projectId)
+        Project project = projectRepo.findById(addVideosRequest.getProjectId())
                 .orElseThrow(() -> new AppException(ErrorCode.PROJECT_NOT_FOUND));
-        for (MultipartFile file : files) {
-            assets.add(addVideo(file, project));
+        for (VideoRequest video : addVideosRequest.getVideoRequestList()) {
+            assets.add(addVideo(video, project));
         }
         return assets;
     }
@@ -159,13 +161,10 @@ public class VideoServiceImpl implements VideoService {
         return outputPath;
     }
 
-    public VideoResponse addVideo(MultipartFile file, Project project) {
-        String filetype = getFileType(file);
-        if (!filetype.equals(MediaType.VIDEO.getname())) {
-            throw new AppException(ErrorCode.INVALID_VIDEO_FORMAT);
-        }
+    public VideoResponse addVideo(VideoRequest videoRequest, Project project) {
         Video video = new Video();
-        video.setAsset(cloudinaryService.uploadFile(file, filetype));
+        String newVideoAsset = addTimeRangeForUrl(videoRequest.getAsset(), ZERO, videoRequest.getDuration());
+        video.setAsset(newVideoAsset);
         video.setProject(project);
         video.setUploadTime(LocalDateTime.now());
         return maptoVideoResponse(videoRepo.save(video));

@@ -8,7 +8,7 @@ import com.example.spring_boot_react_demo.service.FFmpegService;
 import static com.example.spring_boot_react_demo.util.ConvertUtils.*;
 import static com.example.spring_boot_react_demo.util.FileUtil.*;
 import static com.example.spring_boot_react_demo.util.Constants.*;
-
+import static com.example.spring_boot_react_demo.util.CloudinaryUtil.*;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -133,18 +133,6 @@ public class FFmpegServiceImpl implements FFmpegService {
         } catch (IOException | InterruptedException e) {
             throw new AppException(ErrorCode.FFMPEG_GET_DURATION_VIDEO_FAIL);
         }
-    }
-
-    private String addSizeForUrl(String url, String size) {
-        //Parses a size string in the format: WxH
-        String[] dimensions = size.split("x");
-        String resizeParams = "w_" + dimensions[0] + ",h_" + dimensions[1] + ",c_fill/";
-
-        int i = url.indexOf("/upload/");
-        if (i == -1) return url;
-
-        // +8 to include "/upload/" in the prefix
-        return url.substring(0, i + 8) + resizeParams + url.substring(i + 8);
     }
 
     private String runFFmpegCommand(List<String> command) throws IOException, InterruptedException {
