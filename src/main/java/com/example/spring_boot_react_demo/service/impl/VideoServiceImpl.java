@@ -7,6 +7,7 @@ import com.example.spring_boot_react_demo.model.MediaType;
 import com.example.spring_boot_react_demo.model.dto.request.AddVideosRequest;
 import com.example.spring_boot_react_demo.model.dto.request.ApplyTransitionRequest;
 import com.example.spring_boot_react_demo.model.dto.request.VideoRequest;
+import com.example.spring_boot_react_demo.model.dto.response.AddBackgroundResponse;
 import com.example.spring_boot_react_demo.model.dto.response.VideoResponse;
 import com.example.spring_boot_react_demo.model.entity.Lyric;
 import com.example.spring_boot_react_demo.model.entity.Project;
@@ -21,6 +22,7 @@ import com.example.spring_boot_react_demo.service.VideoService;
 import static com.example.spring_boot_react_demo.util.AssUtil.createAssFile;
 import static com.example.spring_boot_react_demo.util.Constants.*;
 import static com.example.spring_boot_react_demo.util.ConvertUtils.*;
+import static com.example.spring_boot_react_demo.util.EntityMapper.mapToAddBackgroundResponse;
 import static com.example.spring_boot_react_demo.util.EntityMapper.maptoVideoResponse;
 import static com.example.spring_boot_react_demo.util.FileUtil.*;
 import static com.example.spring_boot_react_demo.util.CloudinaryUtil.*;
@@ -80,10 +82,10 @@ public class VideoServiceImpl implements VideoService {
     }
 
     @Override
-    public MultipartFile applyTransition (ApplyTransitionRequest applyTransitionRequest) throws IOException {
+    public MultipartFile applyTransition(ApplyTransitionRequest applyTransitionRequest) throws IOException {
         Project project = projectRepo.findById(applyTransitionRequest.getProjectId())
-                .orElseThrow(()-> new AppException(ErrorCode.PROJECT_NOT_FOUND));
-        if(project.getBackground() != null || project.getVideo().size() == ONE) {
+                .orElseThrow(() -> new AppException(ErrorCode.PROJECT_NOT_FOUND));
+        if (project.getBackground() != null || project.getVideo().size() == ONE) {
             throw new AppException(ErrorCode.CANNOT_APPLY_TRANSITION);
         }
 
@@ -91,7 +93,7 @@ public class VideoServiceImpl implements VideoService {
         String outputPath = processVideosWithTransitions(videosMap, applyTransitionRequest, project.getSize());
         MultipartFile outputMultipal = convertFileToMultipartFile(new File(outputPath));
 
-        if(project.getLyric() != null && !project.getLyric().isLyricHidden()) {
+        if (project.getLyric() != null && !project.getLyric().isLyricHidden()) {
             Lyric lyric = project.getLyric();
             String newLyric = lyricService.cutLyricsByTimeRange(videosMap, lyric.getOriginalText(), applyTransitionRequest.getDuration());
             lyric.setText(newLyric);
@@ -130,16 +132,38 @@ public class VideoServiceImpl implements VideoService {
         return outputMultipal;
     }
 
-    private String processVideosWithNoTransitions(TreeMap<Integer, Video> videosMap, String size){
+    @Override
+    public AddBackgroundResponse addBackground(String videoPath, String backgroundPath, Long videoId) throws IOException {
+        Video video = videoRepo.findById(videoId).orElseThrow(() -> new AppException(ErrorCode.VIDEO_NOT_FOUND));
+        String backgroundId = getPublicId(backgroundPath);
+
+        String urlWithBackground = addBackgroundForUrl(videoPath, backgroundId);
+        video.setVideoWithBackground(urlWithBackground);
+
+        String newUrl = cloudinaryService.uploadFile(removeTimeFromUrl(urlWithBackground));
+        double[] timeRange = extractStartAndEndTime(urlWithBackground);
+        video.setAsset(addTimeRangeForUrl(newUrl, timeRange[ZERO], timeRange[ONE]));
+        return mapToAddBackgroundResponse(videoRepo.save(video));
+    }
+
+    @Override
+    public AddBackgroundResponse removeBackground(String videoPath, Long videoId) {
+        Video video = videoRepo.findById(videoId).orElseThrow(() -> new AppException(ErrorCode.VIDEO_NOT_FOUND));
+        video.setAsset(removeBackgroundForUrl(videoPath));
+        video.setVideoWithBackground(null);
+        return mapToAddBackgroundResponse(videoRepo.save(video));
+    }
+
+    private String processVideosWithNoTransitions(TreeMap<Integer, Video> videosMap, String size) {
         List<Integer> keys = new ArrayList<>(videosMap.keySet());
         String prevVideoPath = videosMap.get(keys.get(0)).getAsset();
         String outputPath = null;
-        for (int i = 1 ; i < keys.size() ; i++) {
+        for (int i = 1; i < keys.size(); i++) {
             String nextVideoPath = videosMap.get(keys.get(i)).getAsset();
             outputPath = OUTPUT_VIDEO_FILE + i + MP4;
             ffmpegService.mergeVideo(prevVideoPath, nextVideoPath, outputPath, size);
             prevVideoPath = outputPath;
-            deleteFileIfExists(OUTPUT_VIDEO_FILE + (i-1) + MP4);
+            deleteFileIfExists(OUTPUT_VIDEO_FILE + (i - 1) + MP4);
         }
         return outputPath;
     }
@@ -150,12 +174,12 @@ public class VideoServiceImpl implements VideoService {
         List<Integer> keys = new ArrayList<>(videosMap.keySet());
         String prevVideoPath = videosMap.get(keys.get(0)).getAsset();
         String outputPath = null;
-        for (int i = 1 ; i < keys.size() ; i++) {
+        for (int i = 1; i < keys.size(); i++) {
             String nextVideoPath = videosMap.get(keys.get(i)).getAsset();
             outputPath = OUTPUT_VIDEO_FILE + i + MP4;
             ffmpegService.applyTransition(prevVideoPath, nextVideoPath, outputPath, ffmpegTransition, applyTransitionRequest.getDuration(), size);
             prevVideoPath = outputPath;
-            deleteFileIfExists(OUTPUT_VIDEO_FILE + (i-1) + MP4);
+            deleteFileIfExists(OUTPUT_VIDEO_FILE + (i - 1) + MP4);
         }
         assert outputPath != null;
         return outputPath;

@@ -3,6 +3,7 @@ package com.example.spring_boot_react_demo.service;
 import com.example.spring_boot_react_demo.model.dto.request.AddVideosRequest;
 import com.example.spring_boot_react_demo.model.dto.request.ApplyTransitionRequest;
 import com.example.spring_boot_react_demo.model.dto.request.VideoRequest;
+import com.example.spring_boot_react_demo.model.dto.response.AddBackgroundResponse;
 import com.example.spring_boot_react_demo.model.dto.response.VideoResponse;
 import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
@@ -14,4 +15,6 @@ public interface VideoService {
     void updateVideo(VideoRequest backgroundRequest);
     MultipartFile applyTransition (ApplyTransitionRequest applyTransitionRequest) throws IOException;
     MultipartFile removeEffect(Long projectId) throws IOException;
+    AddBackgroundResponse addBackground(String videoPath, String backgroundPath, Long videoId) throws IOException;
+    AddBackgroundResponse removeBackground(String videoPath, Long videoId);
 }

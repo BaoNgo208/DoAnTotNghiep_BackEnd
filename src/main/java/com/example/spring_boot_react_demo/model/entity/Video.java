@@ -34,4 +34,7 @@ public class Video {
 
     @Column(name = "end_time")
     Double endTime;
+
+    @Column(name = "video_with_background")
+    String videoWithBackground;
 }

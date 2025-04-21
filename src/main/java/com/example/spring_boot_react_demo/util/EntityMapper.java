@@ -1,5 +1,6 @@
 package com.example.spring_boot_react_demo.util;
 
+import com.example.spring_boot_react_demo.model.dto.response.AddBackgroundResponse;
 import com.example.spring_boot_react_demo.model.dto.response.ProjectBasicResponse;
 import com.example.spring_boot_react_demo.model.dto.response.ProjectFullResponse;
 import com.example.spring_boot_react_demo.model.dto.response.VideoResponse;
@@ -40,6 +41,13 @@ public class EntityMapper {
                 video.getUploadTime(),
                 video.getStartTime(),
                 video.getEndTime()
+        );
+    }
+    public static AddBackgroundResponse mapToAddBackgroundResponse(Video video) {
+        return new AddBackgroundResponse(
+                video.getId(),
+                video.getAsset(),
+                video.getVideoWithBackground()
         );
     }
 }

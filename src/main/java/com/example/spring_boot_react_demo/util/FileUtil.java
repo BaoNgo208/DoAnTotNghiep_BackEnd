@@ -1,11 +1,21 @@
 package com.example.spring_boot_react_demo.util;
 import lombok.extern.slf4j.Slf4j;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
 @Slf4j
 public class FileUtil {
+    public static byte[] downloadFile(String fileUrl) throws IOException {
+        URL url = new URL(fileUrl);
+        try (InputStream in = url.openStream()) {
+            return in.readAllBytes();
+        }
+    }
 
     public static void deleteFileIfExists(String filePath) {
         new Thread(() -> {

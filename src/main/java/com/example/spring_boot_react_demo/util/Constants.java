@@ -26,4 +26,5 @@ public final class Constants {
     public static final String SIZE = "640x360";
     public static final String EMPTY_VALUE = "";
     public static final String DASH = "_";
+    public static final String SLASH = "/";
 }

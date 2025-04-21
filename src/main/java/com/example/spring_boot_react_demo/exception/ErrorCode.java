@@ -16,7 +16,9 @@ public enum ErrorCode {
     NO_VIDEOS_PROVIDED("No videos provided", HttpStatus.BAD_REQUEST),
     CANNOT_APPLY_TRANSITION("Cannot apply transition effect to the project", HttpStatus.BAD_REQUEST),
     UNAUTHORIZED("Unauthorized: Token expired or invalid", HttpStatus.UNAUTHORIZED),
-    EFFECT_DOES_NOT_EXIT("Effect does not exit", HttpStatus.BAD_REQUEST),;
+    EFFECT_DOES_NOT_EXIT("Effect does not exit", HttpStatus.BAD_REQUEST),
+    BACKGROUND_DOSE_NOT_EXIST("Background dose does not exist", HttpStatus.BAD_REQUEST),
+    ;
 
     private final String message;
     private final HttpStatusCode httpStatusCode;
