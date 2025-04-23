@@ -54,6 +54,25 @@ public class AssUtil {
         }
         return lyricSegments;
     }
+
+    public static String validateAndFixAssFormat(String assContent) {
+        StringBuilder newContest = new StringBuilder();
+        String[] lines = assContent.split(NEW_LINE);
+        for (String line : lines) {
+            if (line.startsWith(DIALOGUE_TEXT)) {
+                newContest.append(validateAndFixTimeFormat(line)).append(NEW_LINE);
+            } else {
+                newContest.append(line).append(NEW_LINE);
+            }
+        }
+        return newContest.toString();
+    }
+
+    private static String validateAndFixTimeFormat(String line) {
+        // Convert H:MM:SS.xx to HH:MM:SS.xx if needed
+        return line.replaceAll("(\\s|,|\\A)(\\d:)", "$10$2");
+    }
+
     public static String convertListToAssText(List<LyricSegment> lyricSegments, String text){
         StringBuilder modifiedText = new StringBuilder();
         String[] lines = text.split(NEW_LINE);

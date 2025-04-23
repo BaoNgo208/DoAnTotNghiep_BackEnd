@@ -132,6 +132,7 @@ public class WhisperServiceImpl implements WhisperService {
                 .orElseThrow(() -> new AppException(ErrorCode.PROJECT_NOT_FOUND));
 
         String assContent = new String(assFile.getBytes(), StandardCharsets.UTF_8);
+        assContent = validateAndFixAssFormat(assContent);
         Lyric lyric = new Lyric();
         lyric.setProject(project);
         lyric.setText(assContent);
