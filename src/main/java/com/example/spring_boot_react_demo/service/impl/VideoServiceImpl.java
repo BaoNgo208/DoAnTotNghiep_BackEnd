@@ -75,8 +75,11 @@ public class VideoServiceImpl implements VideoService {
     public void updateVideo(VideoRequest videoRequest) {
         Video video = videoRepo.findById(videoRequest.getId())
                 .orElseThrow(() -> new AppException(ErrorCode.VIDEO_NOT_FOUND));
-        video.setAsset(videoRequest.getAsset());
+
         video.setStartTime(videoRequest.getStartTime());
+        String videoVersion = getVersionOfVideo(video.getAsset());
+        video.setAsset(concatVersionWithVideoAsset(videoRequest.getAsset(), videoVersion));
+        video.setVideoWithBackground(videoRequest.getAssetWithBackground());
         video.setEndTime(videoRequest.getEndTime());
         videoRepo.save(video);
     }
@@ -85,10 +88,10 @@ public class VideoServiceImpl implements VideoService {
     public MultipartFile applyTransition(ApplyTransitionRequest applyTransitionRequest) throws IOException {
         Project project = projectRepo.findById(applyTransitionRequest.getProjectId())
                 .orElseThrow(() -> new AppException(ErrorCode.PROJECT_NOT_FOUND));
-        if (project.getBackground() != null || project.getVideo().size() == ONE) {
+
+        if (project.getVideo().size() == ONE) {
             throw new AppException(ErrorCode.CANNOT_APPLY_TRANSITION);
         }
-
         TreeMap<Integer, Video> videosMap = convertListVideoToMap(project.getVideo());
         String outputPath = processVideosWithTransitions(videosMap, applyTransitionRequest, project.getSize());
         MultipartFile outputMultipal = convertFileToMultipartFile(new File(outputPath));
@@ -135,9 +138,11 @@ public class VideoServiceImpl implements VideoService {
     @Override
     public AddBackgroundResponse addBackground(String videoPath, String backgroundPath, Long videoId) throws IOException {
         Video video = videoRepo.findById(videoId).orElseThrow(() -> new AppException(ErrorCode.VIDEO_NOT_FOUND));
+        String videoVersion = getVersionOfVideo(video.getAsset());
+        String updatedVideoPath = concatVersionWithVideoAsset(videoPath, videoVersion);
         String backgroundId = getPublicId(backgroundPath);
 
-        String urlWithBackground = addBackgroundForUrl(videoPath, backgroundId);
+        String urlWithBackground = addBackgroundForUrl(updatedVideoPath, backgroundId);
         video.setVideoWithBackground(urlWithBackground);
 
         String newUrl = cloudinaryService.uploadFile(removeTimeFromUrl(urlWithBackground));
@@ -148,8 +153,13 @@ public class VideoServiceImpl implements VideoService {
 
     @Override
     public AddBackgroundResponse removeBackground(String videoPath, Long videoId) {
-        Video video = videoRepo.findById(videoId).orElseThrow(() -> new AppException(ErrorCode.VIDEO_NOT_FOUND));
-        video.setAsset(removeBackgroundForUrl(videoPath));
+        Video video = videoRepo.findById(videoId)
+                .orElseThrow(() -> new AppException(ErrorCode.VIDEO_NOT_FOUND));
+
+        String rawUrl = removeBackgroundForUrl(videoPath);
+        String cleanedUrl = cleanCloudinaryUrl(rawUrl);
+
+        video.setAsset(cleanedUrl);
         video.setVideoWithBackground(null);
         return mapToAddBackgroundResponse(videoRepo.save(video));
     }
@@ -170,14 +180,15 @@ public class VideoServiceImpl implements VideoService {
 
     private String processVideosWithTransitions(TreeMap<Integer, Video> videosMap, ApplyTransitionRequest applyTransitionRequest, String size) {
         FFmpegTransition ffmpegTransition = FFmpegTransition.fromString(applyTransitionRequest.getTransitionType());
-
+        double duration = applyTransitionRequest.getDuration();
         List<Integer> keys = new ArrayList<>(videosMap.keySet());
         String prevVideoPath = videosMap.get(keys.get(0)).getAsset();
         String outputPath = null;
         for (int i = 1; i < keys.size(); i++) {
             String nextVideoPath = videosMap.get(keys.get(i)).getAsset();
+            Double fadeOutStartTime = videosMap.get(keys.get(i - 1)).getEndTime() - (i * duration);
             outputPath = OUTPUT_VIDEO_FILE + i + MP4;
-            ffmpegService.applyTransition(prevVideoPath, nextVideoPath, outputPath, ffmpegTransition, applyTransitionRequest.getDuration(), size);
+            ffmpegService.applyTransition(prevVideoPath, nextVideoPath, outputPath, ffmpegTransition, duration, fadeOutStartTime, size);
             prevVideoPath = outputPath;
             deleteFileIfExists(OUTPUT_VIDEO_FILE + (i - 1) + MP4);
         }

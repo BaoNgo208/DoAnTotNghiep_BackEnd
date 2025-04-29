@@ -15,6 +15,7 @@ public class VideoRequest {
     Long id;
     Long projectId;
     String asset;
+    String assetWithBackground;
     Double duration;
     LocalDateTime uploadTime;
     Double startTime;

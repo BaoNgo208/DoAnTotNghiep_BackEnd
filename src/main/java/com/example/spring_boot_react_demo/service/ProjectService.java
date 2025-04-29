@@ -12,7 +12,6 @@ public interface ProjectService {
     ProjectBasicResponse createProject(CreateProjectRequest createProjectRequest);
     ProjectFullResponse getProject(Long projectId);
     String updateProject(UpdateProjectRequest updateProjectRequest);
-    String addBackground(Long projectId, MultipartFile backgroundFile);
     Resource exportProject(Long projectId, String outputVideoPath);
     Project getProjectById(Long projectId);
 }

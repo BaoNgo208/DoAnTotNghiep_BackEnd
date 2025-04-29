@@ -16,8 +16,7 @@ public class EntityMapper {
                 project.getUploadTime(),
                 project.getLength(),
                 project.getAsset(),
-                project.getSize(),
-                project.getBackground()
+                project.getSize()
         );
     }
     public static ProjectFullResponse mapToProjectResponse(Project project, List<VideoResponse> videoResponses) {
@@ -29,7 +28,6 @@ public class EntityMapper {
                 project.getSize(),
                 project.getAsset(),
                 videoResponses,
-                project.getBackground(),
                 project.getLyric()
         );
     }

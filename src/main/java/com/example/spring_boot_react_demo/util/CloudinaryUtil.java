@@ -5,7 +5,6 @@ import com.example.spring_boot_react_demo.exception.ErrorCode;
 
 import static com.example.spring_boot_react_demo.util.Constants.*;
 
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
@@ -83,6 +82,15 @@ public class CloudinaryUtil {
         return url.replaceAll("so_[\\d.]+,eo_[\\d.]+(,|/)?", "");
     }
 
+    public static String cleanCloudinaryUrl(String url) {
+        if (url == null || url.isEmpty()) {
+            return url;
+        }
+        url = url.replace("http://", "https://");
+        url = url.replace("upload//", "upload/");
+        return url;
+    }
+
     private static String addParamForUrl(String url, String param) {
         int uploadIndex = url.indexOf(UPLOAD_MARKER);
         int versionIndex = url.indexOf(VERSION_MARKER, uploadIndex);
@@ -92,7 +100,7 @@ public class CloudinaryUtil {
         int transformStart = uploadIndex + UPLOAD_MARKER.length();
         String newTransform;
         if (versionIndex < transformStart) {
-            newTransform = SLASH + param;
+            newTransform = param;
         } else {
             String currentTransform = url.substring(transformStart, versionIndex);
             newTransform = updateBlockByParamType(currentTransform, param);
@@ -102,13 +110,55 @@ public class CloudinaryUtil {
     }
 
     private static String updateBlockByParamType(String existingParams, String newParams) {
-        // currentTransform contains two parts: backgroundParam/sizeOrTimeParam
         String[] params = existingParams.split(SLASH);
-        if (params.length != 2) return newParams;
-        // Check if param is a backgroundParam
-        if (newParams.startsWith("l_")) {
-            return overrideParams(params[ZERO], newParams) + SLASH + params[ONE];
-        } else return params[ZERO] + SLASH + overrideParams(params[ONE], newParams);
+        int paramCount = params.length;
+        // If existingParams has 2 parts (overlay + timing), replace the appropriate one
+        if (paramCount == 2) {
+            if (newParams.startsWith(OVERLAY_PREFIX)) {
+                return overrideParams(params[ZERO], newParams) + SLASH + params[ONE];
+            }
+            else {
+                return params[ZERO] + SLASH + overrideParams(params[ONE], newParams);
+            }
+        }
+        // If only timing block exists
+        else {
+            if (newParams.startsWith(OVERLAY_PREFIX)) {
+                return newParams + SLASH + existingParams;
+            } else {
+                return overrideParams(existingParams, newParams);
+            }
+        }
+    }
+
+    public static String getVersionOfVideo(String videoAsset ){
+        // Regex to find "/v<number>/" in the URL (e.g., /v123456/)
+        String regex = "/(v\\d+)/";
+        java.util.regex.Pattern pattern = java.util.regex.Pattern.compile(regex);
+        java.util.regex.Matcher matcher = pattern.matcher(videoAsset);
+
+        if (matcher.find()) {
+            return matcher.group(1);
+        }
+
+        return null;
+    }
+
+    public static String concatVersionWithVideoAsset(String previousVideoAsset, String version) {
+        if (previousVideoAsset == null || version == null) {
+            return null;
+        }
+
+        int lastSlashIndex = previousVideoAsset.lastIndexOf(SLASH);
+        if (lastSlashIndex == NOT_FOUND) {
+            return previousVideoAsset;
+        }
+
+        String pathBeforeVideoId = previousVideoAsset.substring(ZERO, lastSlashIndex + ONE);
+        String videoId = previousVideoAsset.substring(lastSlashIndex + ONE);
+        pathBeforeVideoId = pathBeforeVideoId.replaceAll("v\\d+/+$", EMPTY_VALUE);
+
+        return pathBeforeVideoId + version + SLASH + videoId;
     }
 
     private static String overrideParams(String oldParams, String newParams) {

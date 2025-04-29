@@ -1,6 +1,5 @@
 package com.example.spring_boot_react_demo.model.dto.request;
 
-import com.example.spring_boot_react_demo.model.entity.Background;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 import java.time.LocalDateTime;
@@ -19,5 +18,4 @@ public class UpdateProjectRequest {
     String size;
     String asset;
     List<VideoRequest> videos;
-    Background background;
 }

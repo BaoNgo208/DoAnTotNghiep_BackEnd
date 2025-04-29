@@ -1,6 +1,5 @@
 package com.example.spring_boot_react_demo.model.dto.response;
 
-import com.example.spring_boot_react_demo.model.entity.Background;
 import com.example.spring_boot_react_demo.model.entity.Lyric;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
@@ -20,6 +19,5 @@ public class ProjectFullResponse {
     String size;
     String asset;
     List<VideoResponse> videos;
-    Background background;
     Lyric lyric;
 }

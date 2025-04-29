@@ -44,13 +44,6 @@ public class ProjectController {
                 .result(projectService.updateProject(updateProjectRequest))
                 .build();
     }
-    @PutMapping("/addBackground")
-    public ApiResponse<String> addBackground(@RequestParam Long projectId,
-                                             @RequestParam MultipartFile backgroundFile) {
-        return ApiResponse.<String>builder()
-                .result(projectService.addBackground(projectId, backgroundFile))
-                .build();
-    }
     @GetMapping("/exportProject")
     public ResponseEntity<Resource> exportProject(@RequestParam Long projectId,
                                                   @RequestParam String outputVideoPath) {

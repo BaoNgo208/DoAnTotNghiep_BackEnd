@@ -63,9 +63,7 @@ public class FFmpegServiceImpl implements FFmpegService {
     }
 
     @Override
-    public void applyTransition(String prevVideo, String nextVideo, String outputPath, FFmpegTransition transition, Double duration, String size) {
-        Double video1Duration = getVideoDuration(prevVideo);
-        double fadeOutStartTime = video1Duration - duration;
+    public void applyTransition(String prevVideo, String nextVideo, String outputPath, FFmpegTransition transition, Double duration, Double fadeOutStartTime, String size) {
         try {
             runFFmpegCommand(Arrays.asList(
                     "ffmpeg", "-y",
@@ -116,22 +114,6 @@ public class FFmpegServiceImpl implements FFmpegService {
             ));
         } catch (IOException | InterruptedException e) {
             throw new AppException(ErrorCode.FFMPEG_ADD_LYRIC_FAIL);
-        }
-    }
-
-    public Double getVideoDuration(String videoPath) {
-        try {
-            String durationStr = runFFmpegCommand(Arrays.asList(
-                    "ffprobe",
-                    "-v", "error",
-                    "-select_streams", "v:0",
-                    "-show_entries", "format=duration",
-                    "-of", "default=noprint_wrappers=1:nokey=1",
-                    videoPath
-            ));
-            return Double.parseDouble(durationStr);
-        } catch (IOException | InterruptedException e) {
-            throw new AppException(ErrorCode.FFMPEG_GET_DURATION_VIDEO_FAIL);
         }
     }
 

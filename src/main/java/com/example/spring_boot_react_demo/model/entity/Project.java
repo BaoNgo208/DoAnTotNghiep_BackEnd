@@ -39,8 +39,6 @@ public class Project {
     @OneToMany(mappedBy = "project")
     List<Video> Video = new ArrayList<>();
 
-    @OneToOne(mappedBy = "project", cascade = CascadeType.ALL, orphanRemoval = true)
-    Background background;
 
     @OneToOne(mappedBy = "project", cascade = CascadeType.ALL, orphanRemoval = true)
     Lyric lyric;
