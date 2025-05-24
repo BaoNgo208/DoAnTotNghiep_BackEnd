@@ -13,10 +13,17 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.*;
+import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -102,6 +109,173 @@ public class FFmpegServiceImpl implements FFmpegService {
         }
     }
 
+    @Override
+    public void mixAudioWithVideo(Path videoPath, Path audioPath, Path outputPath) throws IOException, InterruptedException {
+        List<String> command = Arrays.asList(
+                "ffmpeg",
+                "-i", videoPath.toString(),
+                "-i", audioPath.toString(),
+                "-filter_complex", "[0:a][1:a]amix=inputs=2:duration=first:dropout_transition=2[a]",
+                "-map", "0:v",
+                "-map", "[a]",
+                "-c:v", "copy",
+                "-shortest",
+                outputPath.toString()
+        );
+
+        runFFmpegCommand(command);
+    }
+
+    public void mixAudiosWithTiming(Path videoPath, List<Path> audioPaths, List<Double> startTimesInMs, Path outputPath) throws IOException, InterruptedException {
+        List<String> command = new ArrayList<>();
+        command.add("ffmpeg");
+
+        // Input video
+        command.add("-i");
+        command.add(videoPath.toString());
+
+        // Input audios
+        for (Path audioPath : audioPaths) {
+            command.add("-i");
+            command.add(audioPath.toString());
+        }
+
+        // Build filter_complex
+        StringBuilder filter = new StringBuilder();
+
+        // 1. Gắn audio gốc từ video
+        filter.append("[0:a]volume=0.5,adelay=0|0[a0];");
+
+        // 2. Gắn các audio thêm, với thời gian delay tương ứng
+        for (int i = 0; i < audioPaths.size(); i++) {
+            Double delay = startTimesInMs.get(i);
+            filter.append("[").append(i + 1).append(":a]")
+                    .append("volume=1.5,adelay=") // tăng 150%
+                    .append(delay).append("|").append(delay)
+                    .append("[a").append(i + 1).append("];");
+        }
+
+        // 3. Gộp tất cả audio lại
+        for (int i = 0; i <= audioPaths.size(); i++) {
+            filter.append("[a").append(i).append("]");
+        }
+
+        filter.append("amix=inputs=").append(audioPaths.size() + 1)
+                .append(":duration=first:dropout_transition=2[aout]");
+
+        // Thêm filter_complex
+        command.add("-filter_complex");
+        command.add(filter.toString());
+
+        // Map video stream và audio sau khi mix
+        command.add("-map");
+        command.add("0:v");
+        command.add("-map");
+        command.add("[aout]");
+
+        command.add("-c:v");
+        command.add("copy");
+        command.add("-shortest");
+
+        command.add(outputPath.toString());
+
+        runFFmpegCommand(command);
+    }
+
+
+
+    @Override
+    public MultipartFile applyVintageEffect(String videoUrl) throws IOException, InterruptedException {
+        Path workingDir = Paths.get(System.getProperty("user.dir"));
+
+        Path inputPath = workingDir.resolve("input_video.mp4");
+        Path outputPath = workingDir.resolve("output_video.mp4");
+
+        try (InputStream in = new URL(videoUrl).openStream()) {
+            Files.copy(in, inputPath, StandardCopyOption.REPLACE_EXISTING);
+        }
+
+        List<String> command = Arrays.asList(
+                "ffmpeg",
+                "-i", inputPath.toString(),
+                "-vf", "curves=vintage,vignette,eq=contrast=1.2:brightness=0.05:saturation=0.6",
+                "-c:a", "aac",
+                "-c:v", "libx264",
+                outputPath.toString()
+        );
+        runFFmpegCommand(command);
+
+
+        MultipartFile resultFile;
+        try (InputStream fis = Files.newInputStream(outputPath)) {
+            resultFile = new MockMultipartFile("file", outputPath.getFileName().toString(), "video/mp4", fis);
+        }
+
+        // Xóa file tạm sau khi đã tạo MultipartFile xong
+        try {
+            Files.deleteIfExists(inputPath);
+            Files.deleteIfExists(outputPath);
+        } catch (IOException e) {
+            e.printStackTrace();  // hoặc log lỗi tùy bạn
+        }
+
+        return resultFile;
+    }
+
+    @Override
+    public MultipartFile applyVintageEffectWithOverlay(String videoUrl, String overlayUrl) throws IOException, InterruptedException {
+        Path workingDir = Paths.get(System.getProperty("user.dir"));
+
+        Path inputPath = workingDir.resolve("input_video.mp4");
+        Path overlayPath = workingDir.resolve("overlay_video.mp4");
+        Path outputPath = workingDir.resolve("output_video.mp4");
+
+        try (InputStream in = new URL(videoUrl).openStream()) {
+            Files.copy(in, inputPath, StandardCopyOption.REPLACE_EXISTING);
+        }
+        // Tải overlay video về local
+        try (InputStream in = new URL(overlayUrl).openStream()) {
+            Files.copy(in, overlayPath, StandardCopyOption.REPLACE_EXISTING);
+        }
+
+        List<String> command = Arrays.asList(
+                "ffmpeg",
+                "-stream_loop", "-1",
+                "-i", overlayPath.toString(),   // Dùng file local cho overlay
+                "-i", inputPath.toString(),
+                "-filter_complex", "[1:v]format=yuv420p,scale=1920:1080,setsar=1[base];" +
+                        "[0:v]format=gray,scale=1920:1080:flags=bicubic,setsar=1[scratch];" +
+                        "[base][scratch]blend=all_mode='overlay':all_opacity=0.2[v];" +
+                        "[v]colorchannelmixer=.9:.5:.3:0:.4:.8:.2:0:.2:.3:.7[out]",
+                "-map", "[out]",
+                "-map", "1:a?",
+                "-c:v", "libx264",
+                "-c:a", "copy",
+                "-shortest",
+                outputPath.toString()
+        );
+
+        runFFmpegCommand(command);
+
+
+        MultipartFile resultFile;
+        try (InputStream fis = Files.newInputStream(outputPath)) {
+            resultFile = new MockMultipartFile("file", outputPath.getFileName().toString(), "video/mp4", fis);
+        }
+
+        // Xóa file tạm sau khi đã tạo MultipartFile xong
+        try {
+            Files.deleteIfExists(inputPath);
+            Files.deleteIfExists(overlayPath);
+            Files.deleteIfExists(outputPath);
+        } catch (IOException e) {
+            e.printStackTrace();  // hoặc log lỗi tùy bạn
+        }
+
+        return resultFile;
+    }
+
+
     private void addAssToVideo(String videoPath, File assFile, String outputPath) {
         try {
             String escapedSubtitlePath = assFile.getAbsolutePath().replace("\\", "\\\\").replace(":", "\\:");
@@ -118,6 +292,8 @@ public class FFmpegServiceImpl implements FFmpegService {
     }
 
     private String runFFmpegCommand(List<String> command) throws IOException, InterruptedException {
+        System.out.println("Running FFmpeg command: " + String.join(" ", command));
+
         ProcessBuilder processBuilder = new ProcessBuilder(command);
         processBuilder.redirectErrorStream(true);
         Process process = processBuilder.start();
@@ -126,15 +302,21 @@ public class FFmpegServiceImpl implements FFmpegService {
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
             String line;
             while ((line = reader.readLine()) != null) {
-                output.append(line).append(NEW_LINE);
+                System.out.println("[ffmpeg] " + line);  // in từng dòng output
+                output.append(line).append(System.lineSeparator());
             }
         }
+
         int exitCode = process.waitFor();
+        System.out.println("FFmpeg process exited with code: " + exitCode);
 
         if (exitCode != 0) {
-            log.error(output.toString());
+            System.err.println("FFmpeg failed. Full output:\n" + output.toString());
             throw new RuntimeException("FFmpeg execution failed with exit code: " + exitCode);
         }
+
         return output.toString();
     }
+
+
 }

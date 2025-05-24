@@ -9,6 +9,8 @@ import jakarta.annotation.Resource;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+
+import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
@@ -38,6 +40,34 @@ public class CloudinaryServiceImpl implements CloudinaryService {
             return null;
         }
     }
+
+    private String getFileExtension(String fileName) {
+        int lastDotIndex = fileName.lastIndexOf('.');
+        return (lastDotIndex != -1) ? fileName.substring(lastDotIndex) : "";
+    }
+    @Override
+    public String uploadFile(File file, String resourceType) {
+        try {
+            HashMap<Object, Object> options = new HashMap<>();
+            options.put("resource_type", resourceType);
+            Map uploadedFile = cloudinary.uploader().upload(file, options);
+            String publicId = (String) uploadedFile.get("public_id");
+
+            if (MediaType.VIDEO.getname().toLowerCase().equals(resourceType)) {
+                return CLOUDINARY_UPLOAD_URL + MediaType.VIDEO.getname().toLowerCase() + LOCAL_UPLOAD_URL + publicId + getFileExtension(file.getName());
+            } else if (MediaType.AUDIO.getname().equals(resourceType)) {
+                return CLOUDINARY_UPLOAD_URL + MediaType.AUDIO.getname().toLowerCase() + LOCAL_UPLOAD_URL + publicId + ".mp3";
+            } else if (MediaType.IMAGE.getname().toLowerCase().equals(resourceType)) {
+                return CLOUDINARY_UPLOAD_URL + MediaType.IMAGE.getname().toLowerCase() + LOCAL_UPLOAD_URL + publicId + ".jpg";
+            }
+
+            return cloudinary.url().secure(true).generate(publicId);
+        } catch (IOException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
 
     @Override
     public String uploadFile(String fileUrl) throws IOException {

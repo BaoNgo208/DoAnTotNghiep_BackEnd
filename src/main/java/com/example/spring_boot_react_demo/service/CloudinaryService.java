@@ -9,4 +9,5 @@ public interface CloudinaryService {
     void deleteFile(String publicId, String resourceType);
     String uploadFile(MultipartFile file, String resourceType);
     String uploadFile(String url) throws IOException;
+     String uploadFile(File file, String resourceType);
 }

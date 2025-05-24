@@ -25,8 +25,9 @@ import org.springframework.web.multipart.MultipartFile;
 import static com.example.spring_boot_react_demo.util.AssUtil.*;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
-import java.util.concurrent.TimeUnit;
+//import java.util.concurrent.TimeUnit;
 import static com.example.spring_boot_react_demo.util.FileUtil.*;
+import java.time.Duration;
 import static com.example.spring_boot_react_demo.util.Constants.MEDIA_TYPE_AUDIO;
 import static com.example.spring_boot_react_demo.util.ConvertUtils.convertMultipartFileToFile;
 
@@ -43,9 +44,9 @@ public class WhisperServiceImpl implements WhisperService {
     ProjectRepo projectRepository;
 
     OkHttpClient httpClient = new OkHttpClient.Builder()
-            .connectTimeout(30, TimeUnit.SECONDS)
-            .writeTimeout(30, TimeUnit.SECONDS)
-            .readTimeout(30, TimeUnit.SECONDS)
+            .connectTimeout(Duration.ofSeconds(30))
+            .writeTimeout(Duration.ofSeconds(30))
+            .readTimeout(Duration.ofSeconds(30))
             .build();
 
     @Override

@@ -87,4 +87,9 @@ public class ProjectServiceImpl implements ProjectService {
         return projectRepo.findById(projectId)
                 .orElseThrow(() -> new AppException(ErrorCode.PROJECT_NOT_FOUND));
     }
+
+    @Override
+    public void saveProject(Project project) {
+         projectRepo.save(project);
+    }
 }

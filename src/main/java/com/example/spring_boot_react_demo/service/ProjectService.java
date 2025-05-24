@@ -14,4 +14,5 @@ public interface ProjectService {
     String updateProject(UpdateProjectRequest updateProjectRequest);
     Resource exportProject(Long projectId, String outputVideoPath);
     Project getProjectById(Long projectId);
+    void saveProject(Project project);
 }

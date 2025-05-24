@@ -7,6 +7,7 @@ import com.example.spring_boot_react_demo.model.MediaType;
 import com.example.spring_boot_react_demo.model.dto.request.AddVideosRequest;
 import com.example.spring_boot_react_demo.model.dto.request.ApplyTransitionRequest;
 import com.example.spring_boot_react_demo.model.dto.request.VideoRequest;
+import com.example.spring_boot_react_demo.model.dto.response.AddAudioToVideoResponse;
 import com.example.spring_boot_react_demo.model.dto.response.AddBackgroundResponse;
 import com.example.spring_boot_react_demo.model.dto.response.VideoResponse;
 import com.example.spring_boot_react_demo.model.entity.Lyric;
@@ -26,6 +27,9 @@ import static com.example.spring_boot_react_demo.util.EntityMapper.mapToAddBackg
 import static com.example.spring_boot_react_demo.util.EntityMapper.maptoVideoResponse;
 import static com.example.spring_boot_react_demo.util.FileUtil.*;
 import static com.example.spring_boot_react_demo.util.CloudinaryUtil.*;
+
+import com.example.spring_boot_react_demo.util.CloudinaryUtil;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -164,6 +168,8 @@ public class VideoServiceImpl implements VideoService {
         return mapToAddBackgroundResponse(videoRepo.save(video));
     }
 
+
+
     private String processVideosWithNoTransitions(TreeMap<Integer, Video> videosMap, String size) {
         List<Integer> keys = new ArrayList<>(videosMap.keySet());
         String prevVideoPath = videosMap.get(keys.get(0)).getAsset();
@@ -203,5 +209,46 @@ public class VideoServiceImpl implements VideoService {
         video.setProject(project);
         video.setUploadTime(LocalDateTime.now());
         return maptoVideoResponse(videoRepo.save(video));
+    }
+
+
+    @Override
+    public AddAudioToVideoResponse addAudioToVideo(MultipartFile video, MultipartFile audio) {
+        return null;
+    }
+
+    @Override
+    public Video getVideoById(Long id) {
+        return videoRepo.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Video not found with id: " + id));
+    }
+
+    @Override
+    public void saveVideo(Video newVideo) {
+        videoRepo.save(newVideo);
+    }
+
+    @Override
+    public String applyVintageEffect(Long videoId) throws IOException, InterruptedException {
+        Video video = videoRepo.findById(videoId).orElseThrow(() -> new EntityNotFoundException("cant not found video with id:" + videoId));
+        MultipartFile videoAfterAddedEffect = ffmpegService.applyVintageEffect(video.getAsset());
+        double [] prevSoAndEo = CloudinaryUtil.extractStartAndEndTime(video.getAsset());
+        String newVideoUrl = cloudinaryService.uploadFile(videoAfterAddedEffect,MediaType.VIDEO.getname());
+        String newVideoUrlWithSoAndEo = CloudinaryUtil.addTimeRangeForUrl(newVideoUrl,prevSoAndEo[ZERO],prevSoAndEo[ONE]);
+        video.setAsset(newVideoUrlWithSoAndEo);
+        videoRepo.save(video);
+        return newVideoUrlWithSoAndEo;
+    }
+
+    @Override
+    public String applyVintageEffectWithOverlay(Long videoId,String overlayPath) throws IOException, InterruptedException {
+        Video video = videoRepo.findById(videoId).orElseThrow(() -> new EntityNotFoundException("cant not found video with id:" + videoId));
+        MultipartFile videoAfterAddedEffect = ffmpegService.applyVintageEffectWithOverlay(video.getAsset(),overlayPath);
+        double [] prevSoAndEo = CloudinaryUtil.extractStartAndEndTime(video.getAsset());
+        String newVideoUrl = cloudinaryService.uploadFile(videoAfterAddedEffect,MediaType.VIDEO.getname());
+        String newVideoUrlWithSoAndEo = CloudinaryUtil.addTimeRangeForUrl(newVideoUrl,prevSoAndEo[ZERO],prevSoAndEo[ONE]);
+        video.setAsset(newVideoUrlWithSoAndEo);
+        videoRepo.save(video);
+        return newVideoUrlWithSoAndEo;
     }
 }

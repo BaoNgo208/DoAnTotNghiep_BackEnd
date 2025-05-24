@@ -7,7 +7,7 @@ public final class Constants {
     }
 
     public static final String DOT= ".";
-    public static final String CLOUDINARY_UPLOAD_URL = "https://res.cloudinary.com/dta6fx6ja/";
+    public static final String CLOUDINARY_UPLOAD_URL = "https://res.cloudinary.com/ds7sx6zop/";
     public static final String LOCAL_UPLOAD_URL = "/upload/v1/";
     public static final String OVERLAY_PREFIX = "l_";
     public static final int NOT_FOUND = -1;
@@ -15,7 +15,7 @@ public final class Constants {
     public static final int ONE = 1;
     public static final String API_URL = "https://api.openai.com/v1/audio/transcriptions";
     public static final MediaType MEDIA_TYPE_AUDIO = MediaType.parse("audio/mpeg");
-    public static final String OPENAI_API_KEY = "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";
+    public static final String OPENAI_API_KEY = "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";
     public static final String HEADER_FILE_PATH = "src/main/java/com/example/spring_boot_react_demo/util/ass_header.txt";
     public static final String NEW_LINE = "\n";
     public static final String COMMA = ",";
