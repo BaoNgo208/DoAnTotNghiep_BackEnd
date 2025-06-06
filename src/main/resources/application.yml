@@ -1,0 +1,60 @@
+spring:
+  application:
+    name: spring-boot-react-demo
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 500MB
+      max-request-size: 500MB
+  security:
+    oauth2:
+      client:
+        registration:
+            google:
+              client-id: 615805105422-77t263811dspmbknpu64gu9fhefg1qtd.apps.googleusercontent.com
+              client-secret: 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
+              scope:
+                - email
+                - profile
+                - https://www.googleapis.com/auth/youtube.upload
+
+
+  datasource:
+    url: jdbc:sqlserver://localhost:1433;instanceName=SQLEXPRESS;databaseName=lyrimix_main;encrypt=true;trustServerCertificate=true
+    username: baobap208
+    password: 123
+    driver-class-name: com.microsoft.sqlserver.jdbc.SQLServerDriver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    database-platform: org.hibernate.dialect.SQLServerDialect
+
+server:
+  port: 8080
+  servlet:
+    context-path: /Lyrimix
+cloudinary:
+  cloud_name: ds7sx6zop
+  api_key: 533314628897469
+  api_secret: aP6wC6C39vpMPVJVj4ymng9HlwA
+logging:
+  level:
+    org.hibernate.orm.connections.pooling: WARN
+    org.hibernate.engine.transaction.jta.platform.internal: WARN
+    org.hibernate.jpa: WARN
+    com.zaxxer.hikari: WARN
+    org.springframework.orm.jpa: WARN
+    org.springframework.transaction: WARN
+    org.springframework.boot.autoconfigure: WARN
+    org.springframework.security: WARN
+openai:
+  api:
+    key: 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
+youtube:
+  clientId: 615805105422-77t263811dspmbknpu64gu9fhefg1qtd.apps.googleusercontent.com
+  clientSecret: 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
+  redirectUri: http://localhost:5173/oauth-callback
+  tokenUri: https://oauth2.googleapis.com/token
+  uploadUrl: https://www.googleapis.com/upload/youtube/v3/videos?part=snippet,status

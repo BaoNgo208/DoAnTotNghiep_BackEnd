@@ -221,11 +221,10 @@ public class FFmpegServiceImpl implements FFmpegService {
 
         return resultFile;
     }
+    private MultipartFile processVideoWithOverlay(String videoUrl, String overlayUrl, FFmpegCommandBuilder commandBuilder)
+            throws IOException, InterruptedException {
 
-    @Override
-    public MultipartFile applyVintageEffectWithOverlay(String videoUrl, String overlayUrl) throws IOException, InterruptedException {
         Path workingDir = Paths.get(System.getProperty("user.dir"));
-
         Path inputPath = workingDir.resolve("input_video.mp4");
         Path overlayPath = workingDir.resolve("overlay_video.mp4");
         Path outputPath = workingDir.resolve("output_video.mp4");
@@ -233,16 +232,41 @@ public class FFmpegServiceImpl implements FFmpegService {
         try (InputStream in = new URL(videoUrl).openStream()) {
             Files.copy(in, inputPath, StandardCopyOption.REPLACE_EXISTING);
         }
-        // Tải overlay video về local
+
         try (InputStream in = new URL(overlayUrl).openStream()) {
             Files.copy(in, overlayPath, StandardCopyOption.REPLACE_EXISTING);
         }
 
-        List<String> command = Arrays.asList(
+        List<String> command = commandBuilder.build(inputPath, overlayPath, outputPath);
+        runFFmpegCommand(command);
+
+        MultipartFile resultFile;
+        try (InputStream fis = Files.newInputStream(outputPath)) {
+            resultFile = new MockMultipartFile("file", outputPath.getFileName().toString(), "video/mp4", fis);
+        }
+
+        try {
+            Files.deleteIfExists(inputPath);
+            Files.deleteIfExists(overlayPath);
+            Files.deleteIfExists(outputPath);
+        } catch (IOException e) {
+            e.printStackTrace();  // hoặc log lỗi
+        }
+
+        return resultFile;
+    }
+
+    @FunctionalInterface
+    public interface FFmpegCommandBuilder {
+        List<String> build(Path inputPath, Path overlayPath, Path outputPath);
+    }
+    @Override
+    public MultipartFile applyVintageEffectWithOverlay(String videoUrl, String overlayUrl) throws IOException, InterruptedException {
+        return processVideoWithOverlay(videoUrl, overlayUrl, (input, overlay, output) -> Arrays.asList(
                 "ffmpeg",
                 "-stream_loop", "-1",
-                "-i", overlayPath.toString(),   // Dùng file local cho overlay
-                "-i", inputPath.toString(),
+                "-i", overlay.toString(),
+                "-i", input.toString(),
                 "-filter_complex", "[1:v]format=yuv420p,scale=1920:1080,setsar=1[base];" +
                         "[0:v]format=gray,scale=1920:1080:flags=bicubic,setsar=1[scratch];" +
                         "[base][scratch]blend=all_mode='overlay':all_opacity=0.2[v];" +
@@ -252,28 +276,99 @@ public class FFmpegServiceImpl implements FFmpegService {
                 "-c:v", "libx264",
                 "-c:a", "copy",
                 "-shortest",
-                outputPath.toString()
-        );
+                output.toString()
+        ));
+    }
 
+    @Override
+    public MultipartFile applyRetroCameraEffect(String videoUrl, String overlayUrl) throws IOException, InterruptedException {
+        return processVideoWithOverlay(videoUrl, overlayUrl, (input, overlay, output) -> Arrays.asList(
+                "ffmpeg",
+                "-i", input.toString(),
+                "-stream_loop", "-1",
+                "-i", overlay.toString(),
+                "-filter_complex",
+                "[1]chromakey=0x008000:blend=0:similarity=0.15[ckout];" +
+                        "[ckout][0]scale2ref[ckout_scaled][base_scaled];" +
+                        "[base_scaled][ckout_scaled]overlay",
+                "-shortest",
+                output.toString()
+        ));
+    }
+
+
+    @Override
+    public MultipartFile applyRetroCameraEffectWithVintage(String videoUrl, String overlayUrl) throws IOException, InterruptedException {
+        return processVideoWithOverlay(videoUrl, overlayUrl, (input, overlay, output) -> Arrays.asList(
+                "ffmpeg",
+                "-i", input.toString(),
+                "-stream_loop", "-1",
+                "-i", overlay.toString(),
+                "-filter_complex",
+                "[1]chromakey=0x008000:blend=0:similarity=0.15[ckout];" +
+                        "[ckout][0]scale2ref[ckout_scaled][base_scaled];" +
+                        "[base_scaled][ckout_scaled]overlay," +
+                        "format=yuv420p,eq=saturation=0.6:contrast=1.1:brightness=0.05," +
+                        "curves=vintage,noise=alls=20:allf=t+u",
+                "-shortest",
+                output.toString()
+        ));
+    }
+
+    @Override
+    public MultipartFile applyNaturalFallEffect(String videoUrl, String overlayUrl, String fallType) throws IOException, InterruptedException {
+        Path workingDir = Paths.get(System.getProperty("user.dir"));
+        Path inputPath = workingDir.resolve("input_video.mp4");
+        Path overlayPath = workingDir.resolve("overlay_video.mp4");
+        Path outputPath = workingDir.resolve("output_video.mp4");
+
+        // Tải video chính về
+        try (InputStream in = new URL(videoUrl).openStream()) {
+            Files.copy(in, inputPath, StandardCopyOption.REPLACE_EXISTING);
+        }
+
+        // Tải overlay (hiệu ứng) về
+        try (InputStream in = new URL(overlayUrl).openStream()) {
+            Files.copy(in, overlayPath, StandardCopyOption.REPLACE_EXISTING);
+        }
+
+        // Xây dựng lệnh FFmpeg
+        List<String> command = new ArrayList<>();
+        command.add("ffmpeg");
+        command.add("-stream_loop");
+        command.add("-1");
+        command.add("-i");
+        command.add(overlayPath.toString());
+        command.add("-i");
+        command.add(inputPath.toString());
+
+        if ("snow".equalsIgnoreCase(fallType)) {
+            command.add("-filter_complex");
+            command.add("[0:v]colorkey=0x000000:0.3:0.1[snow];[1:v][snow]overlay=0:0:shortest=1");
+        } else {
+            command.add("-filter_complex");
+            command.add("[0:v]colorkey=0x000000:0.1:0.05,format=rgba,colorchannelmixer=aa=0.7[sakura];[1:v][sakura]overlay=0:0:shortest=1");
+        }
+
+        command.add(outputPath.toString());
+
+        // Chạy FFmpeg
         runFFmpegCommand(command);
 
-
+        // Trả về kết quả dạng MultipartFile
         MultipartFile resultFile;
         try (InputStream fis = Files.newInputStream(outputPath)) {
             resultFile = new MockMultipartFile("file", outputPath.getFileName().toString(), "video/mp4", fis);
         }
 
-        // Xóa file tạm sau khi đã tạo MultipartFile xong
-        try {
-            Files.deleteIfExists(inputPath);
-            Files.deleteIfExists(overlayPath);
-            Files.deleteIfExists(outputPath);
-        } catch (IOException e) {
-            e.printStackTrace();  // hoặc log lỗi tùy bạn
-        }
+        // Xoá file tạm nếu cần
+        Files.deleteIfExists(inputPath);
+        Files.deleteIfExists(overlayPath);
+        Files.deleteIfExists(outputPath);
 
         return resultFile;
     }
+
 
 
     private void addAssToVideo(String videoPath, File assFile, String outputPath) {

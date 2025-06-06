@@ -20,7 +20,7 @@ public class Lyric {
     @Column(name ="lyric_id", nullable = false)
     Long id;
 
-    @Column(name = "lyric_text", nullable = false ,  columnDefinition = "LONGTEXT")
+    @Column(name = "lyric_text", nullable = false ,columnDefinition = "NVARCHAR(MAX)")
     String text;
 
     @OneToOne(fetch = FetchType.LAZY)
@@ -31,9 +31,9 @@ public class Lyric {
     @Column(name = "is_lyric_hidden", nullable = false)
     boolean isLyricHidden;
 
-    @Column(name = "original_lyric_text" , columnDefinition = "LONGTEXT")
+    @Column(name = "original_lyric_text" , columnDefinition = "NVARCHAR(MAX)")
     private String originalText;
 
-    @Column(name = "effect_lyric_text", columnDefinition = "LONGTEXT")
+    @Column(name = "effect_lyric_text",columnDefinition = "NVARCHAR(MAX)")
     private String effectText;
 }

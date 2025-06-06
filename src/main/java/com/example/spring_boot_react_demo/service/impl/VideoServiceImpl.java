@@ -40,6 +40,8 @@ import java.io.File;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.function.Consumer;
+import java.util.function.Function;
 
 
 @Slf4j
@@ -85,6 +87,14 @@ public class VideoServiceImpl implements VideoService {
         video.setAsset(concatVersionWithVideoAsset(videoRequest.getAsset(), videoVersion));
         video.setVideoWithBackground(videoRequest.getAssetWithBackground());
         video.setEndTime(videoRequest.getEndTime());
+        videoRepo.save(video);
+    }
+
+    @Override
+    public void updateVideoAsset(Long videoId,String updatedAsset) {
+        Video video = videoRepo.findById(videoId)
+                .orElseThrow(() -> new AppException(ErrorCode.VIDEO_NOT_FOUND));
+        video.setAsset(updatedAsset);
         videoRepo.save(video);
     }
 
@@ -228,27 +238,77 @@ public class VideoServiceImpl implements VideoService {
         videoRepo.save(newVideo);
     }
 
-    @Override
-    public String applyVintageEffect(Long videoId) throws IOException, InterruptedException {
-        Video video = videoRepo.findById(videoId).orElseThrow(() -> new EntityNotFoundException("cant not found video with id:" + videoId));
-        MultipartFile videoAfterAddedEffect = ffmpegService.applyVintageEffect(video.getAsset());
-        double [] prevSoAndEo = CloudinaryUtil.extractStartAndEndTime(video.getAsset());
-        String newVideoUrl = cloudinaryService.uploadFile(videoAfterAddedEffect,MediaType.VIDEO.getname());
-        String newVideoUrlWithSoAndEo = CloudinaryUtil.addTimeRangeForUrl(newVideoUrl,prevSoAndEo[ZERO],prevSoAndEo[ONE]);
+
+    private String applyEffect(Long videoId, Function<String, MultipartFile> effectFunction) throws IOException, InterruptedException {
+        Video video = videoRepo.findById(videoId)
+                .orElseThrow(() -> new EntityNotFoundException("cant not found video with id:" + videoId));
+
+        MultipartFile videoAfterEffect = effectFunction.apply(video.getAsset());
+        double[] prevSoAndEo = CloudinaryUtil.extractStartAndEndTime(video.getAsset());
+
+        String newVideoUrl = cloudinaryService.uploadFile(videoAfterEffect, MediaType.VIDEO.getname());
+        String newVideoUrlWithSoAndEo = CloudinaryUtil.addTimeRangeForUrl(newVideoUrl, prevSoAndEo[ZERO], prevSoAndEo[ONE]);
+
         video.setAsset(newVideoUrlWithSoAndEo);
         videoRepo.save(video);
+
         return newVideoUrlWithSoAndEo;
     }
 
     @Override
-    public String applyVintageEffectWithOverlay(Long videoId,String overlayPath) throws IOException, InterruptedException {
-        Video video = videoRepo.findById(videoId).orElseThrow(() -> new EntityNotFoundException("cant not found video with id:" + videoId));
-        MultipartFile videoAfterAddedEffect = ffmpegService.applyVintageEffectWithOverlay(video.getAsset(),overlayPath);
-        double [] prevSoAndEo = CloudinaryUtil.extractStartAndEndTime(video.getAsset());
-        String newVideoUrl = cloudinaryService.uploadFile(videoAfterAddedEffect,MediaType.VIDEO.getname());
-        String newVideoUrlWithSoAndEo = CloudinaryUtil.addTimeRangeForUrl(newVideoUrl,prevSoAndEo[ZERO],prevSoAndEo[ONE]);
-        video.setAsset(newVideoUrlWithSoAndEo);
-        videoRepo.save(video);
-        return newVideoUrlWithSoAndEo;
+    public String applyVintageEffect(Long videoId) throws IOException, InterruptedException {
+        return applyEffect(videoId, asset -> {
+            try {
+                return ffmpegService.applyVintageEffect(asset);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        });
     }
+
+    @Override
+    public String applyVintageEffectWithOverlay(Long videoId, String overlayPath) throws IOException, InterruptedException {
+        return applyEffect(videoId, asset -> {
+            try {
+                return ffmpegService.applyVintageEffectWithOverlay(asset, overlayPath);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        });
+    }
+
+    @Override
+    public String applyRetroCameraEffect(Long videoId, String overlayPath,String withVintage) throws IOException, InterruptedException {
+        return applyEffect(videoId, asset -> {
+            try {
+                if(Objects.equals(withVintage, "true")) {
+                    return ffmpegService.applyRetroCameraEffectWithVintage(asset, overlayPath);
+                }
+                return ffmpegService.applyRetroCameraEffect(asset, overlayPath);
+
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        });
+    }
+
+    @Override
+    public String applyNaturalFallEffect(Long videoId, String overlayPath, String fallType) throws IOException, InterruptedException {
+        return applyEffect(videoId, asset -> {
+            try {
+                return ffmpegService.applyNaturalFallEffect(asset, overlayPath,fallType);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        });
+    }
+
 }

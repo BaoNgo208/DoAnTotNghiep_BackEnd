@@ -92,4 +92,11 @@ public class ProjectServiceImpl implements ProjectService {
     public void saveProject(Project project) {
          projectRepo.save(project);
     }
+
+    @Override
+    public void updateProjectAsset(Long id,String asset) {
+        Project project = getProjectById(id);
+        project.setAsset(asset);
+        projectRepo.save(project);
+    }
 }

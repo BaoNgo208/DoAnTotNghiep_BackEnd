@@ -16,6 +16,7 @@ public interface VideoService {
     List<VideoResponse> addVideo(AddVideosRequest addVideosRequest);
     String deleteVideo(Long id);
     void updateVideo(VideoRequest backgroundRequest);
+    void updateVideoAsset(Long videoId,String updatedAsset);
     MultipartFile applyTransition (ApplyTransitionRequest applyTransitionRequest) throws IOException;
     MultipartFile removeEffect(Long projectId) throws IOException;
     AddBackgroundResponse addBackground(String videoPath, String backgroundPath, Long videoId) throws IOException;
@@ -23,8 +24,11 @@ public interface VideoService {
     AddAudioToVideoResponse addAudioToVideo(MultipartFile video,MultipartFile audio);
     Video getVideoById(Long id);
     void saveVideo(Video newVideo);
-
     String applyVintageEffect(Long videoId) throws IOException, InterruptedException;
     String applyVintageEffectWithOverlay(Long videoId,String overlayPath) throws IOException, InterruptedException;
+    String applyRetroCameraEffect (Long videoId , String overlayPath,String withVintage) throws IOException, InterruptedException;
+    String applyNaturalFallEffect(Long videoUrl,String overlayUrl,String fallType)  throws IOException, InterruptedException ;
+
+
 
 }

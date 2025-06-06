@@ -84,6 +84,15 @@ public class VideoController {
                 .build();
     }
 
+    @PatchMapping("/updateVideoAsset")
+    public ApiResponse<Void> updateVideoAsset(@RequestParam Long videoId, @RequestParam String updatedUrl) throws IOException {
+        videoService.updateVideoAsset(videoId, updatedUrl);
+        return ApiResponse.<Void>builder()
+                .message("Update successfully")
+                .build();
+    }
+
+
     @PostMapping("/removeBackground")
     public ApiResponse<?> removeBackground(@RequestParam String videoPath, @RequestParam Long videoId) {
         return ApiResponse.builder()
@@ -226,4 +235,21 @@ public class VideoController {
     {
         return ResponseEntity.ok(videoService.applyVintageEffectWithOverlay(videoId,overlayUrl));
     }
+
+    @PostMapping("/applyRetroCameraEffect")
+    public ResponseEntity<String> applyRetroCameraEffect(@RequestParam("videoId") Long videoId ,
+                                                         @RequestParam("overlayUrl") String overlayUrl,
+                                                         @RequestParam(value = "withVintage", required = false, defaultValue = "false") String withVintage) throws  IOException,InterruptedException
+    {
+        return ResponseEntity.ok(videoService.applyRetroCameraEffect(videoId,overlayUrl,withVintage));
+    }
+    @PostMapping("/applyNaturalFallEffect")
+    public ResponseEntity<String> applyNaturalFallEffect(@RequestParam("videoId") Long videoId ,
+                                                         @RequestParam("overlayUrl") String overlayUrl,
+                                                         @RequestParam("fallType") String fallType) throws  IOException,InterruptedException
+    {
+        return ResponseEntity.ok(videoService.applyNaturalFallEffect(videoId,overlayUrl,fallType));
+    }
+
+
 }

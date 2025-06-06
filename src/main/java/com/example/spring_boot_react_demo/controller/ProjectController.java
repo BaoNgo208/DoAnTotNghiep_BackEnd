@@ -16,6 +16,9 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+
+import java.io.IOException;
+
 import static com.example.spring_boot_react_demo.util.FileUtil.*;
 
 @RestController
@@ -56,5 +59,12 @@ public class ProjectController {
         } finally {
             deleteFileIfExists(resource.getFilename());
         }
+    }
+    @PatchMapping("/updateProjectAsset")
+    public ApiResponse<Void> updateProjectAsset(@RequestParam Long projectId, @RequestParam String updatedUrl) throws IOException {
+        projectService.updateProjectAsset(projectId, updatedUrl);
+        return ApiResponse.<Void>builder()
+                .message("Update successfully")
+                .build();
     }
 }

@@ -16,4 +16,9 @@ public interface FFmpegService {
     void mixAudiosWithTiming(Path videoPath, List<Path> audioPaths, List<Double> startTimesInMs, Path outputPath) throws IOException, InterruptedException;
     MultipartFile  applyVintageEffect(String videoUrl ) throws IOException, InterruptedException ;
     MultipartFile applyVintageEffectWithOverlay(String videoUrl,String overlayUrl) throws IOException, InterruptedException;
+    MultipartFile applyRetroCameraEffect(String videoUrl,String overlayUrl) throws IOException, InterruptedException ;
+    MultipartFile applyRetroCameraEffectWithVintage(String videoUrl,String overlayUrl) throws IOException, InterruptedException ;
+    MultipartFile applyNaturalFallEffect(String videoUrl,String overlayUrl,String fallType) throws IOException, InterruptedException ;
+
+
 }
