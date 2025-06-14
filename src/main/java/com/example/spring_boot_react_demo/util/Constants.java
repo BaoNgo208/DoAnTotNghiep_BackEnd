@@ -15,7 +15,8 @@ public final class Constants {
     public static final int ONE = 1;
     public static final String API_URL = "https://api.openai.com/v1/audio/transcriptions";
     public static final MediaType MEDIA_TYPE_AUDIO = MediaType.parse("audio/mpeg");
-    public static final String OPENAI_API_KEY = "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";
+    public static final String OPENAI_API_KEY = "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";
+
     public static final String HEADER_FILE_PATH = "src/main/java/com/example/spring_boot_react_demo/util/ass_header.txt";
     public static final String NEW_LINE = "\n";
     public static final String COMMA = ",";

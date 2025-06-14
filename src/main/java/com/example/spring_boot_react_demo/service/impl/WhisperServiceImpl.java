@@ -24,10 +24,15 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import static com.example.spring_boot_react_demo.util.AssUtil.*;
 import java.io.*;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 //import java.util.concurrent.TimeUnit;
 import static com.example.spring_boot_react_demo.util.FileUtil.*;
 import java.time.Duration;
+import java.util.stream.Collectors;
+
 import static com.example.spring_boot_react_demo.util.Constants.MEDIA_TYPE_AUDIO;
 import static com.example.spring_boot_react_demo.util.ConvertUtils.convertMultipartFileToFile;
 
@@ -50,7 +55,7 @@ public class WhisperServiceImpl implements WhisperService {
             .build();
 
     @Override
-    public MultipartFile transcribeAudio(MultipartFile audioFile) {
+    public MultipartFile transcribeAudio(MultipartFile audioFile,String targetLang) {
         try {
             Request request = createTranscriptionRequest(audioFile);
             Response response = httpClient.newCall(request).execute();
@@ -60,7 +65,7 @@ public class WhisperServiceImpl implements WhisperService {
                 throw new IOException("Unexpected response from OpenAI: " + response);
             }
 
-            return generateAssFile(response.body().string());
+            return generateAssFile(response.body().string(),targetLang);
         } catch (IOException e) {
             log.error("Error transcribing audio: {}", audioFile.getOriginalFilename(), e);
             return null;
@@ -73,6 +78,7 @@ public class WhisperServiceImpl implements WhisperService {
                 .addFormDataPart("model", "whisper-1")
                 .addFormDataPart("file", audioFile.getOriginalFilename(), RequestBody.create(audioFile.getBytes(), MEDIA_TYPE_AUDIO))
                 .addFormDataPart("response_format", "verbose_json")
+//                .addFormDataPart("language", "es")
                 .build();
         return new Request.Builder()
                 .url(Constants.API_URL)
@@ -81,23 +87,51 @@ public class WhisperServiceImpl implements WhisperService {
                 .build();
     }
 
-    private MultipartFile generateAssFile(String responseBody) throws IOException {
+    private MultipartFile generateAssFile(String responseBody,String targetLang) throws IOException {
         JSONArray segments = new JSONObject(responseBody).getJSONArray("segments");
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-        try (Writer writer = new OutputStreamWriter(outputStream, StandardCharsets.UTF_8)) {
 
+        try (Writer writer = new OutputStreamWriter(outputStream, StandardCharsets.UTF_8)) {
             writer.write(readHeaderFromFile());
 
             for (int i = 0; i < segments.length(); i++) {
                 JSONObject segment = segments.getJSONObject(i);
-                writer.write(String.format("Dialogue: 0,%s,%s,Default,,0,0,0,,%s \n",
+                String originalText = segment.getString("text");
+
+                // 🟡 Translate here
+                String translatedText = translate(originalText, "en", targetLang); // ví dụ dịch từ English sang Spanish
+
+                writer.write(String.format("Dialogue: 0,%s,%s,Default,,0,0,0,,%s\n",
                         convertSecondsToAssFormat(segment.getDouble("start")),
                         convertSecondsToAssFormat(segment.getDouble("end")),
-                        segment.getString("text")));
+                        translatedText));
             }
         }
+
         return new MockMultipartFile("output.ass", "output.ass", "text/plain", outputStream.toByteArray());
     }
+    private String translate(String text, String sourceLang, String targetLang) {
+        try {
+            String encodedText = URLEncoder.encode(text, StandardCharsets.UTF_8);
+            String url = String.format(
+                    "https://translate.googleapis.com/translate_a/single?client=gtx&sl=%s&tl=%s&dt=t&q=%s",
+                    sourceLang, targetLang, encodedText
+            );
+
+            HttpURLConnection connection = (HttpURLConnection) new URL(url).openConnection();
+            connection.setRequestMethod("GET");
+
+            try (BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()))) {
+                String response = in.lines().collect(Collectors.joining());
+                return response.split("\"")[1]; // basic parsing
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            return text; // fallback: return original if translation fails
+        }
+    }
+
+
 
     private String convertSecondsToAssFormat(double seconds) {
         int hours = (int) (seconds / 3600);
@@ -108,9 +142,9 @@ public class WhisperServiceImpl implements WhisperService {
     }
 
     @Override
-    public String processVideo(MultipartFile videoFile, Long projectId) {
+    public String processVideo(MultipartFile videoFile, Long projectId,String targetLang) {
         try {
-            MultipartFile assFile = transcribeAudio(videoFile);
+            MultipartFile assFile = transcribeAudio(videoFile,targetLang);
             if (assFile == null) {
                 throw new IOException("Failed to generate subtitles for: " + videoFile.getOriginalFilename());
             }
