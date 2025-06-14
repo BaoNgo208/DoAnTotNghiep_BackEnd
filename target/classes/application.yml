@@ -34,9 +34,10 @@ spring:
     database-platform: org.hibernate.dialect.PostgreSQLDialect
 
 server:
-  port: 8080
+  port: ${PORT:8080}
   servlet:
     context-path: /Lyrimix
+
 cloudinary:
   cloud_name: ds7sx6zop
   api_key: 533314628897469
@@ -53,7 +54,7 @@ logging:
     org.springframework.security: WARN
 openai:
   api:
-    key: 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
+    key: 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
 youtube:
   clientId: 615805105422-77t263811dspmbknpu64gu9fhefg1qtd.apps.googleusercontent.com
   clientSecret: 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
