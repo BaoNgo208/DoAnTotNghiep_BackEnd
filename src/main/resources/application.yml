@@ -39,9 +39,9 @@ server:
     context-path: /Lyrimix
 
 cloudinary:
-  cloud_name: ds7sx6zop
-  api_key: 533314628897469
-  api_secret: aP6wC6C39vpMPVJVj4ymng9HlwA
+  cloud_name: dlqmbuvb0
+  api_key: 437496422764464
+  api_secret: rWmhczGtSVY57yCloguIUyaoggA
 logging:
   level:
     org.hibernate.orm.connections.pooling: WARN
